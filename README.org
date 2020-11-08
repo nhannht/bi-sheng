@@ -1,10 +1,5 @@
 * Centos/Linux-sysadmin course note:
 
-#+DOWNLOADED: screenshot @ 2020-11-08 16:29:14
-[[file:_assets/2020-11-08_16-29-14_screenshot.png]]
-#+begin_quote
-Bì Shēng (972–1051 AD) was a Chinese artisan and inventor of the world's first movable type technology, with printing being one of the Four Great Inventions of Ancient China
-#+end_quote
 
 ** my note about lession in centos/linux sysadmin at school
 
@@ -33,3 +28,11 @@ Bì Shēng (972–1051 AD) was a Chinese artisan and inventor of the world's fir
 Cái này chỉ liên quan tới cá nhân vì tôi dùng emacs, không quan tâm nếu đọc phần này trên source file
 [[brain:6a3bc6a5-0e97-46d0-b2f0-5a8cf4d75e20][Snort-project [/]​]]
 #+end_comment
+
+
+
+#+DOWNLOADED: screenshot @ 2020-11-08 16:29:14
+[[file:_assets/2020-11-08_16-29-14_screenshot.png]]
+#+begin_quote
+Bì Shēng (972–1051 AD) was a Chinese artisan and inventor of the world's first movable type technology, with printing being one of the Four Great Inventions of Ancient China
+#+end_quote
