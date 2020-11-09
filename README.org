@@ -10,20 +10,22 @@
     + viết được snort rules
     + mô phỏng được snort attack
     + mô phỏng được việc phòng vệ
-   
-** Technology need to train:
-   + vmware: vm-tool:
-     * remember : enable vmware-network
-     * yum repoquery --resolve --depen <module>|xargs repoquery --location |xargs
-       <dowloader> ->to speedup download
-   + git
-   + snort
-   + docker
-   + gns
-   + centos: yum,
-   + perl
+    + tìm hiểu về Using Asterisk (advantag)
 
-     
+
+    
+** Technology need to train:
+   1. vmware: vm-tool:
+      * remember : enable vmware-network
+      * yum repoquery --resolve --depen <module>|xargs repoquery --location |xargs
+        <dowloader> ->to speedup download
+   2. git
+   3. snort
+   4. docker
+   5. gns
+   6. centos: yum,
+   7. perl
+   8. ssh
 #+begin_comment
 Cái này chỉ liên quan tới cá nhân vì tôi dùng emacs, không quan tâm nếu đọc phần này trên source file
 [[brain:6a3bc6a5-0e97-46d0-b2f0-5a8cf4d75e20][Snort-project [/]​]]

@@ -1,0 +1,29 @@
+* TODO note about ssh:
+  |host: our main os|guest: vmware os|
+
+- ssh-keygen trên  guest
+#+begin_src shell
+ssh-keygen -f $HOME/.ssh/
+#+end_src
+
+- copy .pub file vừa generate ra từ cmd trên vào $HOME/.ssh/ on host OS
+
+
+- edit $HOME/.ssh/config file
+#+begin_src shell
+    Host <alias-name>
+    Hostname <ip-of-sshd-server>
+    User <user-on-guest>
+    IdentifyFile <where put key file>
+  # port
+  #protocol
+  
+#+end_src
+
+- với config file này ta có thể dùng trực tiếp lệnh
+#+begin_src shell
+sftp/scp/ssh <host> thay vì sftp/scp/ssh <ip>
+#+end_src
+- và nhớ edit /etc/config/sshd_config vì các os hiện nay không default bật sshd, nhớ start sshd ở tầng system
+
+** TODO write a perl script to install sshpass
