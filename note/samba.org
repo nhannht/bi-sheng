@@ -12,7 +12,7 @@
 
    + Ta config một số thứ trên samba.conf
      - log file = /var/log/samba/%m.log #vì mặc đinh samba chỗ này là một dir không có quyền write, nếu ta không phân quyền sẽ xảy ra bug.
-     - smb.conf mẫu đạt ở cuối bài [[*Smb.conf:][see here]]
+     - smb.conf mẫu đạt ở cuối bài  [[id:71a86ed6-3b15-4ecd-a718-1cd1d0cf79b2][here]]
        #+begin_src shell
          [global]
          ...
@@ -90,6 +90,9 @@
     #+DOWNLOADED: screenshot @ 2020-11-10 08:30:28
     [[file:_assets/2020-11-10_08-30-28_screenshot.png]]
 ** Smb.conf:
+   :PROPERTIES:
+   :ID:       71a86ed6-3b15-4ecd-a718-1cd1d0cf79b2
+   :END:
    #+begin_src shell
      # This is the main Samba configuration file. You should read the
      # smb.conf(5) manual page in order to understand the options listed
