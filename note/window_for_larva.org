@@ -1,0 +1,23 @@
+* Note about window for any noob who never use it before:
+
+  + _You should remember, window is a shit that every born in mankind_ 🖕🏾 :skull_crossbones:
+
+    | dxdiag     | show thông số máy tính |
+    | win-R      | run                    |
+    | ASSOC      | xdg mime               |
+    | FC         | git diff               |
+    | ipconfig   | ip                     |
+    | netstat    |                        |
+    | ping       |                        |
+    | tracert    |                        |
+    | shutdow    |                        |
+    | systeminfo |                        |
+    | sfc        |                        |
++ Check if your +broken+ lovely win is activate or not:
+  #+DOWNLOADED: screenshot @ 2020-11-09 23:47:06
+  [[file:_assets/2020-11-09_23-47-06_screenshot.png]]
+#+begin_quote
+use control pannel
+#+end_quote
+
+** TODO learn basic powershell
