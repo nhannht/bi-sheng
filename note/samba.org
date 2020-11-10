@@ -12,7 +12,7 @@
 
    + Ta config một số thứ trên samba.conf
      - log file = /var/log/samba/%m.log #vì mặc đinh samba chỗ này là một dir không có quyền write, nếu ta không phân quyền sẽ xảy ra bug.
-     - smb.conf mẫu đạt ở cuối bài [[Smb.conf:][see here]]
+     - smb.conf mẫu đạt ở cuối bài [[*Smb.conf:][see here]]
        #+begin_src shell
          [global]
          ...
