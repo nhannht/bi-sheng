@@ -1,0 +1,154 @@
+* Note about dns:
+  + khi user gõ vào brower -> truy cập trang web nào đó với một url (exp : nhannht.com)
+  + browser will phân giải tên miền thành địa chỉ ip để mà gửi request tới ip đó.
+  + Sự phân giải ở đây thông qua dns (domain name resolver):
+    - brower hỏi recursive resolver (vốn được quản lý bởi ISP-nhà cung cấp dịch vụ mạng) có lưu cached của URL này không
+    - nếu không RR sẽ lần lượt gửi các recursive query tới:
+      - root server ([letter].root-servers.net (letter =~ /[a..m] gồm 13 rs lớn khắp thế giớ) 
+      - tld server (.com|.net.... tương ứng với các tên miền)
+      - Authoritative nameserver (ns[1..4].nhannht.com), các tên miền này được tạo ra ngay khi domain được đăng ký bởi nhà đăng ký domain và root server, và dù có dạng sub-domain nhưng nó sẽ được truy cập trước để phân giải tên miền không thông qua domain
+    Cứ mỗi request gửi tới server này sẽ nhận được một iterative query tương ứng như một kiểu reply, để hướng dẫn RR tìm tới bước kế tiếp.
+
+    * Lấy một ví dụ: với url nhannht.com:
+      - browser gửi tới RR. RR <-> root domain gần nhất <-> tld server quản lý .io <-> 1 trong 4 ns[1-4].nhannht.com -> truy cập tới nhannht.com
+
+#+begin_quote
+RR ở đây là _recursive resolver_, khác với phần phiá dưới là resource record trong zone file syntax
+#+end_quote
+  
+**  Cách cài đặt BIND trên centos:
+*** Dịch xuôi từ domain sang ip
+   - dùng yum hoặc rpm để cài [[https://en.wikipedia.org/wiki/BIND][BIND]] :
+   - tuỳ chỉnh trên /etc/named.conf
+       #+begin_src conf
+         listen-on port 53 { 127.0.0.1; 192.168.1.37;};
+         // 192.168.1.37 là ip của máy trên network, chỉ là optional
+         allow-recursion { 127.0.0.1; 192.168.1.0/24;};
+         allow-transfer { none; };
+         allow-update { none; };
+         allow-query {localhost ; 192.168.1.0/24;};
+         version none;
+         hostname none;
+         server-id none;
+       #+end_src
+
+     - giả sử ta muốn tạo thông tin phân giải tên miền nhannht.com trên BIND, ta tạo 1 file /var/named/nhannht.com.zone và edit như sao:
+       #+begin_src dns
+         ; Authoritative data for nhanht.com zone
+         ;
+         $TTL 1D
+         $ORIGIN nhannht.com.
+         @   IN SOA  ns01.nhannht.com   hostname.nhannht.com. (
+         2020111100      ; serial
+         1D              ; refresh
+         1H              ; retry
+         1W              ; expire
+         3H )            ; minimum
+         ;;ns01.nhannht.com là ns , hostname.nhannht.com là mail server, ở đây ta chọn tên mang tính tượng trưng, vì chỉ kiểm tra xem quá trình dịch tên miền của BIND có hoạt động hay không
+         @           IN      A       192.168.25.24
+         ns01   IN  A   192.168.1.30
+         ;; nghĩa là expand thành nhannht.com    IN A 192.168.25.24
+         nhannht.com.            IN      NS      ns01.nhannht.com.
+         test1                   IN      A       192.168.25.21
+         ;; expand thành test.nhannht.com IN A 192.168.25.21
+         t1                      IN      CNAME   test1
+         test2                   IN      A       192.168.25.22
+         test3                   IN      A       192.168.25.23
+       #+end_src
+       - thêm vào trong named.conf:
+         #+begin_src dns
+           zone "nhannht.com" in {
+               type master;
+               file "nhannht.com";
+           }
+         #+end_src
+     - Ta cũng phải fix file /etc/resolv.conf để edit nameserver mà máy sử dụng thành
+       127.0.0.1 hoặc 192.168.1.37. vì trên named.conf ta đặt BIND listen trên cổng 53
+       của các ip này
+     - ~systemctl restart named~ - check bằng cách dùng lệnh ~dig nhannht.com~ hoặc ~dig [t1|test2|test3|tương tự].nhannht.com -> nếu nó trả về ip như 192.168.25.24 (tương ứng với nhannht.com) hooặc các ip tương ứng khác thì ta đã làm chuẩn
+     - Ngoài ra ta cũng có thể dùng nslookup hoặc ping để ping thử tới các tên miền này, nếu máy phân giải được thì sẽ ping được, tuy nhiên có reply hay không tuỳ thuộc việc ip có thật sự tồn tại hay không
+
+#+DOWNLOADED: screenshot @ 2020-11-11 08:07:40
+[[file:_assets/2020-11-11_08-07-40_screenshot.png]]
+
+*** Dịch ngược từ IP sang domain:
+    - dịch người các địa chỉ ip 192.168.25.xxx sang yyy.nhannht.com
+    - tạo file /var/named/nhannht.com.rev
+      #+begin_src dns
+              ; Authoritativ    e data for nhannht.com  reverse zone
+        ;
+        $TTL 1D
+        @   IN SOA  ns01.nhannht.com   hostname.nhannht.com. (
+                                                2017031501      ; serial
+                                                1D              ; refresh
+                                                1H              ; retry
+                                                1W              ; expire
+                                                3H )            ; minimum
+
+        @       IN      NS      nhannht.example.com.
+        nhannht.com.    IN      NS      ns01.example.com.
+        ; 1               IN      PTR     mail.nhannht.com.
+        ; 1               IN      PTR     server.nhannht.com.
+        21              IN      PTR     test1.nhannht.com.
+        22              IN      PTR     test2.nhannht.com.
+        23              IN      PTR     test3.nhannht.com.
+        24              IN      PTR     test4.nhannht.com.
+      #+end_src
+      - thêm vào trong named.conf
+        #+begin_src dns
+          zone    "25.168.192.in-a    ddr.arpa" IN {
+                 type master;
+                 file "nhannht.com.rev";
+          };
+
+        #+end_src
+- restart named.service
+- dùng ~ip -x 192.168.25.21~ nếu trả về kết quả test1.nhannht.com là ta đã đúng
+  #+DOWNLOADED: screenshot @ 2020-11-11 08:08:18
+  [[file:_assets/2020-11-11_08-08-18_screenshot.png]]
+
+*** Note about zone file syntax:
+    
+Một ví dụ về zone file:
+#+begin_src dns
+    ; zone file for example.com
+    $TTL 2d    ; 172800 secs default TTL for zone
+    $ORIGIN example.com.
+    @             IN      SOA   ns1.example.com. hostmaster.example.com. (
+                            2003080800 ; se = serial number
+                            12h        ; ref = refresh
+                            15m        ; ret = update retry
+                            3w         ; ex = expiry
+                            3h         ; min = minimum
+                            )
+                  IN      NS      ns1.example.com.
+                  IN      MX  10  mail.example.net.
+  ; example.com                             mail.example.net
+    joe           IN      A       192.168.254.3
+  ; joe.example.com   IN  A   192.168.254.3
+    www           IN      CNAME   joe 
+#+end_src
+- Syntax trong zone file thuộc dạng config syntax, nó không phải là scripting hay programming language, nên không có kiểu đặt biến, hàm, data type, nó có subsituation, comment và một số default keyword.
+- ~;~ là comment ở cuối câu.
+- ~TTL~ là 1 built in keyword, ở đây gọi là directive, đặt time-to-live cho các record sẽ cached trong bao nhiêu lâu ở các resolver. nếu đặt bằng 0 sẽ không bao giờ bị cáche.
+  - $ORIGIN là một directive khác, luôn đi kèm với một basename, một (phần) của url và nó sẽ được nối với các host bên dưới
+  - ~cụm @ ..... SOA ... (...)~ được gọi là start of authority, là resource record đầu tiên, nó có format khác với các RR khác 1 tí với thứ tự được comment ở trên kia. ngoài ra ta cũng hiểu domain name ngay sau SOA là name-server còn tiếp theo là mail-server.
+  - tất cả các dòng tiếp theo đều là RR, với định dạng
+    #+begin_src shell
+      name  ttl class type rdlen rdat a
+    #+end_src
+
+#+DOWNLOADED: screenshot @ 2020-11-11 08:14:04
+#+NAME: giải thích resource record
+#+CAPTION: trích từ [[https://www.zytrax.com/books/dns/ch8/][zytrax.com]]
+[[file:_assets/2020-11-11_08-14-04_screenshot.png]]
+
+
+
+ - lấy một dòng làm ví dụ ~www           IN      CNAME   joe~ thì www và joe đều là label, sẽ được subtitua với $ORIGIN thàng www.examble.com và joe.examble.com, ta cũng nên lưu ý chỉ cần 1 trong 2 cái này có dạng addr như ~192.168.254.3~ thì không xảy ra subtituation hoặc nêú có dạng xx.$ORIGIN như ~ns1.example.com.~ thì sau khi parse sẽ giữ nguyên chỉ bỏ đi đấu ~.~ cuối  
+   - Ngoài ra ~@~ nghĩa là tự động sub thàng $ORIGIN
+
+#+DOWNLOADED: screenshot @ 2020-11-11 08:14:25
+#+CAPTION: trích từ [[https://www.zytrax.com/books/dns/ch8/][zytrax]]
+[[file:_assets/2020-11-11_08-14-25_screenshot.png]]
+
