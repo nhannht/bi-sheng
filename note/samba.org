@@ -5,7 +5,7 @@
      
    + yum repoquery --location samba |xargs wget |rpm -i samba.*.rpm
 
-     ngoài ra một số distro cần thêm sambaclient và một số dependences khác ta cũng làm tương tự.
+   +  ngoài ra một số distro cần thêm sambaclient và một số dependences khác ta cũng làm tương tự.
 ** Set up samba:
    + Trên linux, ta tạo file /etc/config/smb.conf vì samba không mặc định file này
    + Ta cũng có thể copy/download smb.conf example từ trên internet, nguồn uy tín nhất là từ chính source code của samba: [[https://git.samba.org/samba.git/?p=samba.git;a=blob_plain;f=examples/smb.conf.default;hb=HEAD][smb.conf examble]]
@@ -13,7 +13,7 @@
    + Ta config một số thứ trên samba.conf
      - log file = /var/log/samba/%m.log #vì mặc đinh samba chỗ này là một dir không có quyền write, nếu ta không phân quyền sẽ xảy ra bug.
      - smb.conf mẫu đạt ở cuối bài  [[id:71a86ed6-3b15-4ecd-a718-1cd1d0cf79b2][here]]
-       #+begin_src shell
+       #+begin_src conf
          [global]
          ...
          security = user
@@ -22,7 +22,7 @@
          hosts deny = ALL
        #+end_src
 
-     #+begin_src shell
+     #+begin_src conf
        [Public Directory]
        path = /Public/Files
        guest ok = yes
@@ -30,7 +30,7 @@
        browseable = yes
      #+end_src
 
-   #+begin_src shell
+   #+begin_src conf
      Private Directory
      path = /private/files/
      valid users = me
@@ -45,7 +45,7 @@
    [[file:_assets/2020-11-10_08-40-44_screenshot.png]]
 
    - Ta chỉnh trên smb.conf
-   #+begin_src shell
+   #+begin_src conf
      [username]
      path = <path muốn share>
      valid user = <username>
@@ -56,14 +56,15 @@
 
 
 
-   #+end_src
 ** Truy cập Samba server từ window:
    + trên Window 7 dùng mở cửa sổ Run, gõ vào \\<samba server host ip>
    gõ tên và mật khẩu vào
    #+DOWNLOADED: screenshot @ 2020-11-10 08:32:01
    [[file:_assets/2020-11-10_08-32-01_screenshot.png]]
 
+   #+begin_quote
    ip là ip của linux host,ta tìm bằng *ip addr* hoặc *ifconfig*
+   #+end_quote
    + hoặc ta dùng file explorer cũng có tác dụng tương tự
      #+DOWNLOADED: screenshot @ 2020-11-10 08:32:56
      [[file:_assets/2020-11-10_08-32-56_screenshot.png]]
@@ -93,7 +94,7 @@
    :PROPERTIES:
    :ID:       71a86ed6-3b15-4ecd-a718-1cd1d0cf79b2
    :END:
-   #+begin_src shell
+   #+begin_src conf
      # This is the main Samba configuration file. You should read the
      # smb.conf(5) manual page in order to understand the options listed
      # here. Samba has a huge number of configurable options (perhaps too
@@ -273,7 +274,7 @@
      # A private directory, usable only by fred. Note that fred requires write
      # access to the directory.
      [larva]
-        comment = larva's Service
+     comment = larva's Service
      path = /home/larva/temp/
      valid users = larva
      public = no
