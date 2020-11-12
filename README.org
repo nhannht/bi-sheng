@@ -4,13 +4,13 @@
 ** my note about lession in centos/linux sysadmin at school
 
 *** TODO : Todo list
-    + cài đặt thành công centos/gns/snort
-    + config network, kết nối được vào internet trên centos
-    + kết nối được 2 centos và 1 IOS trên gns
-    + viết được snort rules
-    + mô phỏng được snort attack
-    + mô phỏng được việc phòng vệ
-    + tìm hiểu về Using Asterisk (advantag)
+    + [X] cài đặt thành công centos/gns/snort
+    + [X] config network, kết nối được vào internet trên centos
+    + [X] +kết nối được 2 centos và 1 IOS trên gns+ simple topo in gns:
+    + [ ] viết được snort rules
+    + [ ] mô phỏng được snort +attack+  defend,detecting -> snort dùng để phòng thủ
+    + [ ] mô phỏng được việc phòng vệ
+    + [ ] tìm hiểu về Using Asterisk (advantag)
 
 
     
