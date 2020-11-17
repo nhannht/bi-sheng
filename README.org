@@ -6,11 +6,19 @@
 *** TODO : Todo list
     + [X] cài đặt thành công centos/gns/snort
     + [X] config network, kết nối được vào internet trên centos
-    + [X] +kết nối được 2 centos và 1 IOS trên gns+ simple topo in gns:
+    + [ ] +kết nối được 2 centos và 1 IOS trên gns+ simple topo in gns:
+      - [ ] Gain basic skill for building gns topo
+      - [ ] Kali
+      - [ ] Snort in kali
+      - [ ] DVMA in centos
+      - [ ] Snort in centos
     + [ ] viết được snort rules
-    + [ ] mô phỏng được snort +attack+  defend,detecting -> snort dùng để phòng thủ
+    + [ ] mô phỏng phần tấn công bằng Wireshark, phần packet snipper bằng tcp dump,nmap
     + [ ] mô phỏng được việc phòng vệ
-    + [ ] tìm hiểu về Using Asterisk (advantag)
+    + [ ] tìm hiểu về Using Aterisk (advantag)
+    + [ ] zoiper softphone
+    + [ ] setup an aterisk voip server succest
+    + [ ] attack and defend in aterisk service
 
 
     
@@ -26,6 +34,32 @@
    6. centos: yum,
    7. perl
    8. ssh
+   9. tcpdump/nmap/wireshark
+   10. kali linux
+
+
+
+** Mô phỏng tấn công trên Gns:
+   - Thống kê các kiểu tấn công phổ biến thuộc lĩnh vực networking:
+    |                      | kiểu tân công | hệ điều hành | tool        |
+    |----------------------+---------------+--------------+-------------|
+    | Dos                  | mailbomb      |              | hulk        |
+    |                      | neptune       |              | tor hammer  |
+    |                      | ping of death |              | slowloris   |
+    |                      | smurf         |              | loic        |
+    |                      | udb-storm     |              | xoic        |
+    |                      | process table |              | ddosim      |
+    |                      | tear drop     |              | rudy,hping, |
+    |                      |               |              |             |
+    |                      |               |              |             |
+    | remote to local      |               |              | wireshark   |
+    |                      |               |              |             |
+    |                      |               |              |             |
+    | surveillance/proping | ip sweep      |              |             |
+    |                      | mscan         |              |             |
+    |                      | nmap          |              |             |
+    |                      | saint         |              |             |
+    |                      | satan         |              |             |
 #+begin_comment
 Cái này chỉ liên quan tới cá nhân vì tôi dùng emacs, không quan tâm nếu đọc phần này trên source file
 [[brain:6a3bc6a5-0e97-46d0-b2f0-5a8cf4d75e20][Snort-project [/]​]]
@@ -38,3 +72,5 @@ Cái này chỉ liên quan tới cá nhân vì tôi dùng emacs, không quan tâ
 #+begin_quote
 Bì Shēng (972–1051 AD) was a Chinese artisan and inventor of the world's first movable type technology, with printing being one of the Four Great Inventions of Ancient China
 #+end_quote
+
+
