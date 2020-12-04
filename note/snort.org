@@ -1,1 +1,3 @@
 * Note about snort:
+- LEarn how to understand packet
+- Learn how to write mallicious packet

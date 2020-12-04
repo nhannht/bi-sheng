@@ -1,0 +1,100 @@
+
+#+DOWNLOADED: screenshot @ 2020-12-04 13:43:14
+[[file:_assets/2020-12-04_13-43-14_screenshot.png]]
+
+* Cơ sở lý thuyết:
+** Snort:
+** DDos/DoS:
+   - Dos ((Distribute) Denial of Service) là kiểu tấn công (từ chối dịch vụ).
+   - Mục đích: Làm gián đoạn quá trình vận hành của hệ thống                 
+   - Mục tiêu: Thường là các web server vận hành các ứng dụng mạng ,hoặc các router, layer 3 switch trong hệ thống mạng máy tính 
+   - Đặc điểm :
+     - Attacker người một lớn yêu cầu rác (spam requests) tới đối tượng tấn công, lợi dụng cơ chế mặc định là đối tượng với phản hồi (response ) các yêu cầu này, khi lượng request quá nhiều vượt quá khả năng vận hành của mục tiêu bị tấn công, sẽ dẫn đến việc server bị quá tải, không còn khả năng phản hồi các yêu cầu từ những người dùng bình thường (normal request). Nếu đối tượng bị tấn công là server vận hành ứng dụng web (như apache) sẽ dẫn đến người dùng bình thường không truy cập được. Nếu là 1 router hay một switch layer 3 trong hệ thống mạng của 1 công ty, tổ chức. Có thể dẫn đến những việc vận hành không chính xác. Làm chậm được truyền hệ thống. Mở màn cho những kỹ thuật tấn công khác đi tiếp theo.(như DHCP spoofing nếu DHCP server bị tấn công bởi UDP flood)
+     - Dos thường cần có sự phối hợp từ rất nhiều máy tính (lên tới hàng nghìn) cùng gửi yêu cầu rác về đối tượng tấn công. Vì tấn công từ 1 máy thường không đạt được hiệu quả. Các máy tính này còn là zombie machine. Do bị nhúng mã độc từ trước bởi kẻ tấn công và các mã độc này sẽ nằm ẩn trong máy. Khi kẻ tấn công phát động từ xa, hàng loạt các máy zombie sẽ cùng gửi request tới mục tiêu. Do đó Dos có 1 cái tên khác là DDoS, nghĩa Distributed DoS.
+     - Các hình thức tấn công chia làm 2 nhóm chính: ở layer 7 (application layer) gồm tấn công bằng http request hay mail spam, và layer 4 (transport layer) nếu tấn công bằng TCP,UDP hoặc ICMP.
+      
+* Kịch bản thực hành:
+** Dùng snort để phát hiện và ngăn chặn ICMP/Ping flood: 
+   - ICMP: (Internet Control Message Protocal) là giao thức được thiết kế để kiểm tra xem đường truyền internet có hoạt động bình thường không. IP A sẽ gửi các message tới ip  B ở các cổng xác định và nếu  B phản hồi lại thì cổng đó sẽ có thể nhận tính hiệu.
+   - ICMP vận hành ở layer 4, không phải là một transport protocal, nên không dùng để truyền dữ liệu.
+   - ICMP thường được phát ra bởi chương trình ping.
+   - Kiểu tấn công DoS dựa trên ICMP lợi dụng cơ chế mỗi tín hiệu ICMP gửi phải được phản hồi nếu cổng đó hoạt động bình thường. Và nếu phải phản hồi quá nhiều tín hiệu cùng một lúc sẽ dẫn đến việc đối tượng bị quá tải.
+
+
+ - Attacker: Ta dùng nmap từ blackarch attacker tới centos server:
+ #+begin_src sh
+nmap -A -T4 10.0.0.1
+ #+end_src
+ #+DOWNLOADED: screenshot @ 2020-12-04 12:22:45
+ [[file:_assets/2020-12-04_12-22-45_screenshot.png]]
+
+- Attacker:  thấy có 1 cổng được mở.
+- Attacker: dùng lệnh hping gửi tín hiệu ping tới centos server
+#+begin_src shell
+hping3 -1 -p 80 -i u1000 10.0.0.1
+#+end_src
+#+begin_example
+-1 : gửi icmp, không như ping, hping mặc định là gửi tcp packet
+-p : cổng
+-i u1000: interval, mặc định 1s/1packet, nếu u1000 ta gửi 100 packet/s
+#+end_example
+
+ - Attacker: dùng hping trên cả 3 client cùng lúc chứ không phải 1, tổng tấn công vào centó 
+
+#+DOWNLOADED: screenshot @ 2020-12-04 13:12:25
+[[file:_assets/2020-12-04_13-12-25_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-04 13:12:49
+[[file:_assets/2020-12-04_13-12-49_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-04 13:13:00
+[[file:_assets/2020-12-04_13-13-00_screenshot.png]]
+
+
+
+#+begin_src shell
+> /dev/null để không show output
+#+end_src
+
+#+DOWNLOADED: screenshot @ 2020-12-04 13:16:59
+[[file:_assets/2020-12-04_13-16-59_screenshot.png]]
+Ta thấy từ 1 máy client ta ping tới centos tốc độ response sẽ chậm hơn rất nhiều.
+Hình sau là khi ping bình thường trong tình trạng không bị tấn công
+
+#+DOWNLOADED: screenshot @ 2020-12-04 13:18:34
+[[file:_assets/2020-12-04_13-18-34_screenshot.png]]
+
+- Phiá phòng thủ: Dùng snort với /etc/snort/rules/local.rules:
+  #+DOWNLOADED: screenshot @ 2020-12-04 13:20:24
+ [[file:_assets/2020-12-04_13-20-24_screenshot.png]]
+
+  - Ta chạy snort:
+
+#+begin_src shell
+centos > snort -A console  -c /etc/snort/snort.conf -i eth0
+#+end_src
+#+begin_example
+-A console: kích hoạt alert mode và in output ra console
+-c : dùng file config, đây còn gọi là snipper mode, nếu không dùng file config, snort mặt định sẽ ghi lại tất cả các packet, và không alert.
+-i eth0 : listen trên eth0, tránh trường hợp nhầm với các interface khác (như lo)
+#+end_example
+ - Và snort báo cho ta output. Đây chỉ là output trong  5s, từ 1 attack machine
+
+#+DOWNLOADED: screenshot @ 2020-12-04 13:28:07
+[[file:_assets/2020-12-04_13-28-07_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-04 13:28:50
+[[file:_assets/2020-12-04_13-28-50_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-04 13:29:14
+[[file:_assets/2020-12-04_13-29-14_screenshot.png]]
+- Ta thấy chỉ trong 5s snort đã ghi nhận và báo động hơn 700 packet icmp. So với nếu ta ping thông thường từ 1 client thông thường
+  #+DOWNLOADED: screenshot @ 2020-12-04 13:31:43
+  [[file:_assets/2020-12-04_13-31-43_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-04 13:31:54
+[[file:_assets/2020-12-04_13-31-54_screenshot.png]]
+
+- Với 9s, gấp đôi thời gian snort chỉ ghi nhận 15 packet.
+
+- Từ các kết quả trên, giả sử một attacker điều khiển hàng trăm, hàng nghìn máy zombie cùng tấn công thì hậu quả sẽ dẫn đến server bị mất hoàn toàn khả năng phản hồi.

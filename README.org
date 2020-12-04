@@ -1,3 +1,48 @@
+#+HTML_HEAD: <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+* CƠ SỞ LÝ THUYẾT:
+  - Snort/IDS là gì
+    
+  - DDos:
+
+    - Layer 7:
+
+      - Http ddos vào một webserver
+
+  
+
+   - Layer 4:
+     - TCP sync v
+     - Ping of Death 
+     - UPD flood
+     - XMAS
+     - SYN - ACK v
+     - FIN - ACK
+     - URG - ACK
+     - PSH - ACK 
+     - XMAS
+     - Mỗi kiểu tấn công đi kèm với : wireshark ở client và snort ở web
+     - Đi kèm với  phương thức phòng thủ
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------------
+
 * Centos/Linux-sysadmin course note:
 
 
@@ -18,6 +63,7 @@
     + [ ] tìm hiểu về Using Aterisk (advantag)
     + [ ] zoiper softphone
     + [ ] setup an aterisk voip server succest
+    + [ ] 
     + [ ] attack and defend in aterisk service
 
 
@@ -60,12 +106,10 @@
     |                      | nmap          |              |             |
     |                      | saint         |              |             |
     |                      | satan         |              |             |
-#+begin_comment
-Cái này chỉ liên quan tới cá nhân vì tôi dùng emacs, không quan tâm nếu đọc phần này trên source file
-[[brain:6a3bc6a5-0e97-46d0-b2f0-5a8cf4d75e20][Snort-project [/]​]]
-#+end_comment
+** TODO Mô phỏng ddos/phòng thủ snort, trace bằng ws ngay trong hôm nay
+   DEADLINE: <2020-12-01 Tue>
 
-
+    
 
 #+DOWNLOADED: screenshot @ 2020-11-08 16:29:14
 [[file:_assets/2020-11-08_16-29-14_screenshot.png]]
@@ -74,3 +118,6 @@ Bì Shēng (972–1051 AD) was a Chinese artisan and inventor of the world's fir
 #+end_quote
 
 
+** All type of dos
+
+   - 
