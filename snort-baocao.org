@@ -98,3 +98,96 @@ centos > snort -A console  -c /etc/snort/snort.conf -i eth0
 - Với 9s, gấp đôi thời gian snort chỉ ghi nhận 15 packet.
 
 - Từ các kết quả trên, giả sử một attacker điều khiển hàng trăm, hàng nghìn máy zombie cùng tấn công thì hậu quả sẽ dẫn đến server bị mất hoàn toàn khả năng phản hồi.
+
+
+** TCP SYN flood
+
+
+#+DOWNLOADED: screenshot @ 2020-12-04 22:31:07
+[[file:_assets/2020-12-04_22-31-07_screenshot.png]]
+
+- Trong mọi kết nối TCP (dù có kèm HTTP) hay không đều tuân theo 1 quy tắc
+  
+  - First, the client sends a SYN packet to the server in order to initiate the connection. Client gửi tcp với syn flag (ta gọi là tắt là syn paket) tới server. Mục đích của packet này là báo cho server biết máy khách muốn tạo lập 1 connection. Syn ở đây là synchronize
+  - The server then responds to that initial packet with a SYN/ACK packet, in order to acknowledge the communication. Server sẽ response bằng một tcp packet kèm 2 flag SYN/ACK. Ack ở đây là acknowledge. Để báo cho client biết rằng server sẽ chấp nhận kết nối nếu client tiếp tục. Đồng thời server sẽ bind một socket trên một cổng thuộc nhóm random (từ 49152 tới 65535)
+  - Finally, the client returns an ACK packet to acknowledge the receipt of the packet from the server. After completing this sequence of packet sending and receiving, the TCP connection is open and able to send and receive data. Sau cùng, client sẽ gửi tiếp một ack packet khác tới server. Client cũng sẽ cũng mở socket trong 1 cổng random (từ 49152 đến 65535) và thực hiện kết nối
+- Ngoài ra, nếu muốn kết thúc một kết nối TCP, client hoặc server sẽ gửi packet với flag FIN+ACK packet với phiá còn lại. Quá trình này gọi là termination conection, là một four-way handshake, giao thức 4 giai đoạn
+- Giao thức đợi tín hiệu phản hồi kèm flag ack này giúp cho tcp có tính ổn định và hạn chế tối đa việc mất dữ liệu (reliable) và nhờ đó những giao thức được xây dựng phiá trên nó (như HTTP,FTP) sẽ kế thừa tính này.
+- Nhưng cũng vì thế mà cá kỹ thuật tấn công lợi dụng giao thức này ra đời, ở đây, ngay khi server phản hổi client với ACK+SYN packet (ở bước 2), nó sẽ bắt đầu mở 1 socket 1 cổng dù chưa thực hiện kết nối. Ta gọi là half-connection, server sẽ đợi cho client trả lời bằng ACK packet. Nếu client cố tình không trả lời hoăc kéo dài thời gian trả lời. Cổng đang half-open đây sẽ trở nên hao phí. Từ đây nếu attacker cố tình gửi hàng loạt các packet SYN cùng một lúc. Sẽ dẫn đến việc nạn nhân mở hàng loạt các cổng và bị quá tải.
+- Lấy ví dụ minh họa bởi hping gửi duy nhất 1 SYN packet tới server
+ [[file:_assets/2020-12-04_23-23-18_screenshot.png]]
+
+ - Và server sau khi đợi trả lời không thành công sẽ gửi về tiếp một packet với flag RST. RST là reset, là flag báo về từ server nếu kết 3-way handsake thất bại
+  [[file:_assets/2020-12-04_23-22-41_screenshot.png]]
+
+- Ta cũng thấy thời gian của một half-open rất ngắn, đo bằng ms. nhưng chỉ với hàng triệu tcp syn packet cùng được gửi. Đủ để làm quá tải bất kỳ hệ thống nào.
+
+
+#+begin_src shell
+hping -S -p 80 10.0.0.1 -i u100 --rand-source > /dev/null
+#+end_src
+Ta dùng câu lệnh trên ở cả 3 client blackarch cùng một lúc. Tốc độ gửi là 1000 packet/s. flag "-S" bảo hping gửi packet với syn flag. Nếu không hping mặc định sẽ gửi tcp packet không có flag nào cả và sẽ bị drop ngay lập tức.
+
+Và kết quả nhận đượng khi cố gắng gửi packet ICMP (ping) và TCP syn từ một client thường (với tốc độ 1 packet/s)
+
+#+DOWNLOADED: screenshot @ 2020-12-05 00:04:45
+[[file:_assets/2020-12-05_00-04-45_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-05 00:05:11
+[[file:_assets/2020-12-05_00-05-11_screenshot.png]]
+
+- Và đây là khi ping nếu server không bị tấn công
+  #+DOWNLOADED: screenshot @ 2020-12-05 00:06:00
+  [[file:_assets/2020-12-05_00-06-00_screenshot.png]]
+
+
+- Từ phiá phòng thủ: centos ta dùng snort với rules
+  #+begin_example
+  alert tcp !$HOME_NET any -> $HOME_NET 80 (flags:S;msg:"alert!!!! Some script kiddy try to tcp syn flood your on port 80."; sid:1000002)
+  #+end_example
+
+#+DOWNLOADED: screenshot @ 2020-12-05 00:22:37
+[[file:_assets/2020-12-05_00-22-37_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-05 00:23:02
+[[file:_assets/2020-12-05_00-23-02_screenshot.png]]
+
+- Cách phòng thủ:????
+
+
+
+** Application layer DOS - HTTP flood:
+
+- Cũng như TCP là một giao thức được xây dựng như một lớp abstraction phiá trên IP, HTTP là một giao thức được xây dựng ngay trên nền tảng của các giao thức thuộc các layer phiá dướt của OSI model. HTTP là hypertext transfer protocol, dùng để vận chuyển các dữ liệu dưới dạng nhìn thấy được bởi người dùng thông thường trong môi trường internet. HTTP có thể được xây trên nền TCP hoặc UDP, thuờng là TCP để thừa kế tính đảm bảo của nó. HTTP kết hợp với giao thức bảo mật SSL ta gọi là HTTPS.
+
+  - Ta chạy một apache server trên centos và truy cập cổng 80 từ client với w3m:
+    #+begin_src shell
+    root@centos-server /e/httpd# httpd
+    root@client /# w3m 10.0.0.1
+    #+end_src
+- Nội dung trên websever cổng 80 của cenos server 
+#+DOWNLOADED: screenshot @ 2020-12-05 00:33:14
+[[file:_assets/2020-12-05_00-33-14_screenshot.png]]
+
+- Dùng wireshark để phân tích kết nối http này, ta thấy có tới hơn 10 packet được trao đổi qua lại nhưng chỉ có 2 dòng là HTTP, còn lại đều là TCP (SYN,ACK,FIN), nó cho thấy HTTP chỉ là một protocal phụ thuộc vào protocol ở layer thấp hơn.
+- Diễn giải: client sẽ gửi TCP ack để bắt đầu 3-way-handshake như ta đã giải thích ở ví dụ liền trước. Sau khi đảm bảo kết nối được establish. HTTP request sẽ được gửi đi. Ta nhận diện bằng HTTP header với dòng GET là flag của HTTP, và 1.0 là version của HTTP. Sau đó giữa 2 endnode sẽ bắt có 1 quá trình trao đổi TCP ack và psh. Psh là push flag báo rằng data phải được chuyển ngay tới phiá bên kia, vì data ở HTTP thuờng có dung lượng rất lớn và phải được chia nhỏ ra trước khi gửi, flag này nhằm thúc đẩy nhanh quá trình gửi data. Ở bài thuyết trình này không đi sâu vào. Server reponsse với status 443 vì ta không đặt bất kỳ trang web nào trên trang chủ. Ngay sau khi respone. Vì thấy rằng không cần thiết để duy trì kết nối nữa, máy chủ chủ động gửi tcp fin để bắt đầu quá trình kết thúc TCP connection.
+#+DOWNLOADED: screenshot @ 2020-12-05 00:42:28
+[[file:_assets/2020-12-05_00-42-28_screenshot.png]]
+
+- Như ta đã thấy, HTTP tốn rất ít nhất gấp 2 lần số giai đoạn so với 1 TCP thông thưòng và thậm chí nếu thông qua HTTPS ta còn tốn thêm 2 lần nữa. Do SSL là 3-way-handshake. Và dĩ nhiên bản thân mỗi kết nối HTTP có thể duy trì rất lâu(như streaming,voice ip). Do đó kiểu tấn công HTTP/HTTPS flood thường gây tổn hại nặng nề hơn so với các kiểu nêu trước đây. Cách vận hành của kiểu tấn công này cũng gần tương tự, lợi dụng cơ chế bảo toàn dữ liệu handshake qua nhiều giai đoạn, attacker hoặc cố gắng duy trì quá trình half-open càng lâu càng tốt, hoặc ngược lại duy trì quá trình kết nối establist connection càng lâu càng tốt cũng như gửi càng nhiêu kết nối . Từ đó làm máy tính nạn nhân cạn kiệt khả năng để response các kết nối thông thường.
+  - Ta không dùng hping nữa vì công cụ này không hỗ trợ giao thức http.
+  - Dùng slowloris, công cụ này hứa hẹn  sẽ giữ kết nối các kết nối http của nó càng lâu càng tốt.
+- Ta thử nghiệm slowloris với 1 kết nối
+  #+begin_src shell
+  root@blackarch-3 /# slowloris-py  -s 1 -p 80 10.0.0.1 --sleeptime 30
+  #+end_src
+  #+begin_example
+  -s : số lượng socket, ở đây ta chỉ đặt 1
+  -p 80 : port 80
+  --sleeptime 30. Mỗi kết nối sẽ được restart sau 30s
+  #+end_example
+ - Từ wireshark, slowlorish thành công trong việc giữ kết nối này tới 20s tới khi bị server chủ động huỷ kết nối 
+#+DOWNLOADED: screenshot @ 2020-12-05 01:40:37
+[[file:_assets/2020-12-05_01-40-37_screenshot.png]]
+
+    

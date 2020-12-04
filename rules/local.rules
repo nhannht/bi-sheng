@@ -2,3 +2,4 @@
 # stop icmp flood
 # alert icmp !$HOME_NET any -> $HOME_NET 80 (msg:"icmp flood attack to port 80!!!";sid:1000001;rev:1)
 alert icmp !$HOME_NET any -> $HOME_NET 80 (msg:"icmp flood attack to port 80!!!";sid:1000001;rev:1)
+alert tcp !$HOME_NET any -> $HOME_NET 80 (flags:S;msg:"alert!!!! Some script kiddy try to tcp syn flood your on port 80."; sid:1000002)
