@@ -1,5 +1,10 @@
 #+HTML_HEAD: <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 
+
+- 
+
+
+
 * CƠ SỞ LÝ THUYẾT:
   - Snort/IDS là gì
     
@@ -121,3 +126,4 @@ Bì Shēng (972–1051 AD) was a Chinese artisan and inventor of the world's fir
 ** All type of dos
 
    - 
+

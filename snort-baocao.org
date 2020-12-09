@@ -1,9 +1,35 @@
 
 #+DOWNLOADED: screenshot @ 2020-12-04 13:43:14
 [[file:_assets/2020-12-04_13-43-14_screenshot.png]]
+* Mile stone:  [3/14]
+** TODO Snort in general
+   DEADLINE: <2020-12-10 Thu>
+** DONE ICMP reflection -> hping
+** TODO ICMP packet injection -> ping of death
+   DEADLINE: <2020-12-10 Thu>
+*** Use proxy, iptables, firewall to mitigate                         :bonus:
+*** TODO Scripting instead of use tool                                :bonus:
+** DONE TCP bandwhich-consumming reflection base -> hping
+** DONE HTTP slow and low -> slowloris
+** TODO HTTP bandwhich consuming
+   DEADLINE: <2020-12-10 Thu>
+** TODO UDP bandwhich-consuming -> UDP flood
+** TODO NTP amplication
+** TODO DNS flood -reflection
+** TODO DNS amplication
+** TODO Voip in general
+** TODO Aterisk in general
+   DEADLINE: <2020-12-10 Thu>
+** TODO same subnet asterisk deploy
+   DEADLINE: <2020-12-10 Thu>
+** TODO over internet asterisk deply
+   DEADLINE: <2020-12-10 Thu>
+
+
 
 * Cơ sở lý thuyết:
-** Snort:
+
+** IDS là gì
 ** DDos/DoS:
    - Dos ((Distribute) Denial of Service) là kiểu tấn công (từ chối dịch vụ).
    - Mục đích: Làm gián đoạn quá trình vận hành của hệ thống                 
@@ -156,7 +182,7 @@ Và kết quả nhận đượng khi cố gắng gửi packet ICMP (ping) và TC
 
 
 
-** Application layer DOS - HTTP flood:
+** Application layer DOS - HTTP flood - slow-low attack:
 
 - Cũng như TCP là một giao thức được xây dựng như một lớp abstraction phiá trên IP, HTTP là một giao thức được xây dựng ngay trên nền tảng của các giao thức thuộc các layer phiá dướt của OSI model. HTTP là hypertext transfer protocol, dùng để vận chuyển các dữ liệu dưới dạng nhìn thấy được bởi người dùng thông thường trong môi trường internet. HTTP có thể được xây trên nền TCP hoặc UDP, thuờng là TCP để thừa kế tính đảm bảo của nó. HTTP kết hợp với giao thức bảo mật SSL ta gọi là HTTPS.
 
@@ -174,11 +200,12 @@ Và kết quả nhận đượng khi cố gắng gửi packet ICMP (ping) và TC
 #+DOWNLOADED: screenshot @ 2020-12-05 00:42:28
 [[file:_assets/2020-12-05_00-42-28_screenshot.png]]
 
-- Như ta đã thấy, HTTP tốn rất ít nhất gấp 2 lần số giai đoạn so với 1 TCP thông thưòng và thậm chí nếu thông qua HTTPS ta còn tốn thêm 2 lần nữa. Do SSL là 3-way-handshake. Và dĩ nhiên bản thân mỗi kết nối HTTP có thể duy trì rất lâu(như streaming,voice ip). Do đó kiểu tấn công HTTP/HTTPS flood thường gây tổn hại nặng nề hơn so với các kiểu nêu trước đây. Cách vận hành của kiểu tấn công này cũng gần tương tự, lợi dụng cơ chế bảo toàn dữ liệu handshake qua nhiều giai đoạn, attacker hoặc cố gắng duy trì quá trình half-open càng lâu càng tốt, hoặc ngược lại duy trì quá trình kết nối establist connection càng lâu càng tốt cũng như gửi càng nhiêu kết nối . Từ đó làm máy tính nạn nhân cạn kiệt khả năng để response các kết nối thông thường.
+- Như ta đã thấy, HTTP tốn rất ít nhất gấp 2 lần số giai đoạn so với 1 TCP thông thưòng và thậm chí nếu thông qua HTTPS ta còn tốn thêm 2 lần nữa. Do SSL là 3-way-handshake protocal. Và dĩ nhiên bản thân mỗi kết nối HTTP có thể duy trì rất lâu(như streaming,voip). Do đó kiểu tấn công HTTP/HTTPS flood thường gây tổn hại nặng nề hơn so với các kiểu nêu trước đây. Cách vận hành của kiểu tấn công này cũng gần tương tự, lợi dụng cơ chế bảo toàn dữ liệu handshake qua nhiều giai đoạn, attacker hoặc cố gắng duy trì quá trình half-open càng lâu càng tốt, hoặc ngược lại duy trì quá trình kết nối establist connection càng lâu càng tốt cũng như gửi càng nhiêu kết nối . Từ đó làm máy tính nạn nhân cạn kiệt khả năng để response các kết nối thông thường.
   - Ta không dùng hping nữa vì công cụ này không hỗ trợ giao thức http.
   - Dùng slowloris, công cụ này hứa hẹn  sẽ giữ kết nối các kết nối http của nó càng lâu càng tốt.
+  - Ở ví dụ này chúng ta khai thác hướng tiếp cận mới, một kiểu dos được gọi là slow and low attack, vì thay vì làm chậm
 - Ta thử nghiệm slowloris với 1 kết nối
-  #+begin_src shell
+  #+begin_src perl
   root@blackarch-3 /# slowloris-py  -s 1 -p 80 10.0.0.1 --sleeptime 30
   #+end_src
   #+begin_example
@@ -186,8 +213,58 @@ Và kết quả nhận đượng khi cố gắng gửi packet ICMP (ping) và TC
   -p 80 : port 80
   --sleeptime 30. Mỗi kết nối sẽ được restart sau 30s
   #+end_example
- - Từ wireshark, slowlorish thành công trong việc giữ kết nối này tới 20s tới khi bị server chủ động huỷ kết nối 
+ - Từ wireshark, ta thấy slowlorish thành công trong việc giữ kết nối này tới 20s tới khi bị server chủ động huỷ kết nối 
 #+DOWNLOADED: screenshot @ 2020-12-05 01:40:37
 [[file:_assets/2020-12-05_01-40-37_screenshot.png]]
 
-    
+- Xét ví dụ sau:
+  - Chạy apache server trên centos-server ở cổng 80
+  - Ta thấy nếu dùng w3m- web browser trên cli - để kết nối tới 10.0.0.1:80 trong điều kiện bình thường
+    #+DOWNLOADED: screenshot @ 2020-12-09 01:08:21
+    [[file:_assets/2020-12-09_01-08-21_screenshot.png]]
+
+- Tiếp theo ta set up snort với rule như sau trên centos server
+- Đây là snort rules ta dùng để phát hiện http request tới cổng 80    
+#+begin_src shell
+alert tcp !$HOME_NET any -> $HOME_NET 80 (msg:"Those kids attack by http!!!";content:"HTTP"; sid: 1000003; rev:1)
+#+end_src
+- Dùng câu lệnh để chạy snort:
+#+begin_src shell
+centos-server #  snort -A console -c /etc/snort/snort.conf
+#+end_src
+- Tiếp theo ta dùng slowloris.py (slowloris có 2 phiên bản viết bằng perl và python) với câu lệnh như sau trên cả 2 máy attacker. 
+#+begin_src cperl
+root@blackarch-2 /# slowloris-py -p 80  --sleeptime 10 10.0.0.1
+root@blackarch-3 /# slowloris-py -p 80  --sleeptime 10 10.0.0.1
+root@blackarch-1 /# slowloris-py -p 80  --sleeptime 10 10.0.0.1
+#+end_src
+- Ta thấy slowloris sẽ tạo ra các kết nối trên các socket khác nhay và cố gắng duy trì các kết nối này càng lâu càng tốt với keep-alive header
+
+#+DOWNLOADED: screenshot @ 2020-12-08 11:35:46
+[[file:_assets/2020-12-08_11-35-46_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-08 11:35:59
+[[file:_assets/2020-12-08_11-35-59_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-08 11:44:15
+[[file:_assets/2020-12-08_11-44-15_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-08 11:44:25
+[[file:_assets/2020-12-08_11-44-25_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-08 11:44:38
+[[file:_assets/2020-12-08_11-44-38_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-08 11:45:44
+[[file:_assets/2020-12-08_11-45-44_screenshot.png]]
+
+
+#+begin_comment
+Advanture attack -> write script that auto attack with http request. USe burpsuite or wireshark to capture
+#+end_comment
+
+#+begin_comment
+- NTP amplication dos attack
+- UDP-DNS flood attack
+- DNS amplication attack
+#+end_comment
