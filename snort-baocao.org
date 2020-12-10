@@ -70,42 +70,81 @@
     - Mục tiêu: thể hiện được được truyền của đối tượng bị suy giảm mạnh, hoặc thậm chí đối tượng bị crash hoặc không truy cập được(web server). Thể hiện sự khác biệt về lượng traffic ở môi trường khoẻ mạnh và môi trường bị DDoS. Dùng Snort để phát hiện và log thông tin về các kiểu tấn công này. Nêu ra được giải pháp phòng thủ: có thể dùng snort extension, hoặc iptables, hoặc điều chỉnh trên chính apache2, trên các router.
     
 * Cơ sở lý thuyết:
-** Bàn về tầm quan trọng của đề tài:
-   - 
 
 ** IDS/IPS là gì:
-   - Instrution detectin system (IDS) là các hệ thống hỗ trợ phát hiện các mối nguy từ network và lưu lại (log) các mối nguy này nếu cần
-   - Instrution detecting system (IPS) là hệ thống hỗ trợ ngăn chặn các mối nguy hiểm từ network 
-   - IDS/IPS thường luôn đi kèm với nhau, nhằm đảm báo tính an toàn của mạng máy tính.
-   - Chức năng chính có thể chia ra làm các mục sau:
-     - Như một bộ lọc lưu lại các packet đi qua nó (packet filter) dựa trên các rules được đặt sẵn bởi người dùng ( bằng tay hoặc qua các database có sẵn và được cập nhật thường xuyên)
-     - Báo động nếu các packet thoã mãn một số rules mà được cho là nguy hiểm
-     - Ngăn chặn hoặc hạn chế các packet
-   - Một số đặt tính tiêu biểu của IPS/IDS:
-     - Tự động hoá (automation) 
-     - Cung cấp tính năng đa dạng cho người điều khiển (Compliance)
-     - Dựa trên rules (policy enforcement): 
-#+begin_comment
-https://www.varonis.com/blog/ids-vs-ips/
-https://www.dnsstuff.com/ids-vs-ips
-#+end_comment
+   - Instrusion detection (hệ thống phát hiện thâm nhập) là một bộ các kỹ thuật và phương pháp được thiết kế để phát hiện những hành vi có thể gây nguy hại tới hệ thống (theo nghĩa toàn bộ hệ thống hoặc từng thành phần riêng lẻ). IDS rới vào 2 nhóm chính: Signature-based IDS (dựa trên chữ ký) và anomaly detection IDS (dựa trên sự bất thường ).
+   - Những đối tượng xâm nhậm có chữ ký (như virus máy tính), có thể bị phát hiện bởi các phần mềm. IDS dựa trên chữ ký số hoạt động dưa trên việc đối chiếu nội dung của đối tượng với các chữ ký được lưu lại trên các database về malware hoặc các rule được người vận hành IDS thiết lập bằng tay -> Nếu phát hiện sẽ báo động
+   - Ngược lại IDS based anamoly dựa trên các mô hình máy học để phát hiện các mối nguy hiểm[fn:1]. Phần này sẽ không đi sâu vào trong bài tiểu luận này
+   - Snort thuộc nhóm 1: tức rules-signature IDS, tuy nhiên một số extension của snort hỗ trợ nhóm 2.
+     
+     - Theo trang [[https://cybersecurityventures.com/hackerpocalypse-cybercrime-report-2016/][cypersecurityventure.com]]: tổn hại do tội phạm mạng gây ra sẽ làm tổn thất 10,5 tỉ tỉ đô của thế giới vào năm 2025
+     - Theo trang [[https://www.securitymagazine.com/articles/90493-cyber-attacks-cost-45-billion-in-2018][www.securitymagazine.com]]: chỉ trong năm 2018 các cuộc tấn công mạng đã làm tổn thất $45 tỉ đô của toàn thế giớ. Ta thấy chi phí tổn hại sẽ tăng gấp 240 lần chỉ trong 7 năm nếu số liệu từ 2 trang trên tương đối đúng
+     #+begin_comment
+     - Lấy ví dụ ngay trên topo, một doanh nghiệp trung bình thuê 3 cisco router và 5 cisco switching
+       | router3640     | 170$*3=510 |
+       | cisco catalyst |            |
+     #+end_comment
+** Snort: 
+   - Snort là một bộ chương trình IDS mã nguồn mở, hoạt động dựa trên các rules store ở text files có thể dễ dành edit bằng các text editor.
+   - Các rules của snort được nhóm thành các chủ đề khác nhau. Và ngoài ra có thể chia nhỏ ra thành các files khác nhau. Snort có 1 file config chính là snort.conf .
+   - Nên đặt snort nói riêng hay IDS/IPS ở vị trí nào trên network:
+     - Ngoài tường lửa:
+       #+DOWNLOADED: screenshot @ 2020-12-11 01:03:38
+       [[file:_assets/2020-12-11_01-03-37_screenshot.png]]
+     - Để thực hiện được điều này, edge-router/switch phải có chức năng port-mirroring, tức sẽ copy các packet chạy qua port nối với máy cần bảo vệ (vì máy vận hành snort cũng là một end device, nó phải thông qua một router trung gian để capture packet ) và gửi nó tới IDS đang vận hành snort hoặc các chương trình tương tự. Ưu điểm của cách thiết kế mạng này là ta có thể capture hết tất cả các packet chạy từ external network vào bên trong network cần bảo vệ. Và ta chỉ cần duy nhất 1 máy vận hành IDS -snort. Cisco switch hỗ trợ tính năng SPAN (Switch Port Analyzer) và Cisco Router hỗ trợ tính năng RITE (Router IP Traffic Export) để copy các packet và gửi nó tới máy vận hành IDS, ta gọi tính năng này là port-mirroring
+   - Đằng sau hoặc trong tường lửa: Đơn giản là cài đặt snort trực tiếp trên end device - server cần bảo vệ. Cách này thường không ổn với các IDS cồng kềnh, nhưng ở đây snort được coi là một IDS gọn nhẹ, nên ta cá thể cài snort trên mỗi server khác nhau. Ưu điểm là các packet được lọc qua fỉrewall filter trước nên ta có thể testing xem còn mối nguy hiểm nào mà firewall không lọc đuợc không. Ta cũng tốn ít rules hơn trên mỗi snort
+       #+DOWNLOADED: screenshot @ 2020-12-11 01:14:15
+       [[file:_assets/2020-12-11_01-14-15_screenshot.png]]
 
-#+begin_comment
-https://www2.slideshare.net/buianloc/he-thong-phat-hien-xam-nhap-ids
-#+end_comment
 ** DDos/DoS:
-   - Dos ((Distribute) Denial of Service) là kiểu tấn công (từ chối dịch vụ).
+   - Dos ((Distribute) Denial of Service - tấn công từ chối dịch vụ ) chỉ các kiểu tấn công mạng mà ở đó những kẻ tấn công cố gắng khiến cho một máy tính hoặc một hệ thống máy tính không thể hoặt động bình thường và cung cấp dịch vụ cho những người dùng thông thường của nó. 
    - Mục đích: Làm gián đoạn quá trình vận hành của hệ thống                 
-   - Mục tiêu: Thường là các web server vận hành các ứng dụng mạng ,hoặc các router, layer 3 switch trong hệ thống mạng máy tính 
+   - Mục tiêu: có thể là một network gồm nhiều thiết bị kết nối với nhau, có thể là chỉ là một router vận hành ở layer 3,4 cũng có thể là một webserver ở application level.
    - Đặc điểm :
-     - Attacker người một lớn yêu cầu rác (spam requests) tới đối tượng tấn công, lợi dụng cơ chế mặc định là đối tượng với phản hồi (response ) các yêu cầu này, khi lượng request quá nhiều vượt quá khả năng vận hành của mục tiêu bị tấn công, sẽ dẫn đến việc server bị quá tải, không còn khả năng phản hồi các yêu cầu từ những người dùng bình thường (normal request). Nếu đối tượng bị tấn công là server vận hành ứng dụng web (như apache) sẽ dẫn đến người dùng bình thường không truy cập được. Nếu là 1 router hay một switch layer 3 trong hệ thống mạng của 1 công ty, tổ chức. Có thể dẫn đến những việc vận hành không chính xác. Làm chậm được truyền hệ thống. Mở màn cho những kỹ thuật tấn công khác đi tiếp theo.(như DHCP spoofing nếu DHCP server bị tấn công bởi UDP flood)
+     - Attacker gửi lớn yêu cầu rác (spam requests) tới đối tượng tấn công, lợi dụng cơ chế mặc định là đối tượng với phản hồi (response ) các yêu cầu này, khi lượng request quá nhiều vượt quá khả năng vận hành của mục tiêu bị tấn công, sẽ dẫn đến việc server (hoặc mạng máy tính) bị quá tải, và cạn kiệt các tài nguyên cần thiết (như băng thông, hoặc số thread tối đa để duy trì kết nối). Nếu đối tượng bị tấn công là server vận hành ứng dụng web (như apache) sẽ dẫn đến người dùng bình thường không truy cập được. Nếu là 1 router hay một switch layer 3 trong hệ thống mạng của 1 công ty, tổ chức. Có thể dẫn đến những việc vận hành không chính xác. Làm chậm được truyền hệ thống. Mở màn cho những kỹ thuật tấn công khác đi tiếp theo.(như DHCP spoofing nếu DHCP server bị tấn công bởi UDP flood)
      - Dos thường cần có sự phối hợp từ rất nhiều máy tính (lên tới hàng nghìn) cùng gửi yêu cầu rác về đối tượng tấn công. Vì tấn công từ 1 máy thường không đạt được hiệu quả. Các máy tính này còn là zombie machine. Do bị nhúng mã độc từ trước bởi kẻ tấn công và các mã độc này sẽ nằm ẩn trong máy. Khi kẻ tấn công phát động từ xa, hàng loạt các máy zombie sẽ cùng gửi request tới mục tiêu. Do đó Dos có 1 cái tên khác là DDoS, nghĩa Distributed DoS.
-     - Các hình thức tấn công chia làm 2 nhóm chính: ở layer 7 (application layer) gồm tấn công bằng http request hay mail spam, và layer 4 (transport layer) nếu tấn công bằng TCP,UDP hoặc ICMP.
       
 * Kịch bản thực hành:
+
+** Cài đặt snort trên centos:
+
+   - Snort - vốn là một ứng dụng mã nguồn mở, nên thường đa dạng trong cách cài đặt, do các ứng dụng mã nguồn mở thường được dùng ở nhiều môi trường khác nhau, từ nền tảng x86 như GNU/linux tới FreeBSD,OpenBSD,...Window. Thậm chí là các kiến trúc Sparc như Solaris, MacOS-X...
+   - Ở đây ta thực hiện cài đặt trên snort:
+   - Để nhanh chóng ta sẽ viết một đoạn perl script để tự động hoá quá trình này.
+     #+begin_src perl
+# install_snort.pl
+       use strict;
+       use warnings;
+
+
+       map {system "$_"}(
+         "echo update and install epel-release, epel-release la mot repo ho tro cac package nang cao ma snort yeu cau, repo nay rat pho bien va moi centos sysamin deu dung",
+         "yum update -y",
+         "yum install epel-release -y",
+         "echo cai dat snort truc tiep tu trang chu cua snort,"
+         "yum install https://www.snort.org/downloads/snort/snort-2.9.17-1.centos8.x86_64.rpm -y",
+         "echo mot loi he thong tren centos 8 khien snort khong phat hien file libnet.1, ta giai quyet nhu sau",
+         "ln -s /usr/lib64/libdnet.so.1.0.1 /usr/lib64/libdnet.1"
+       );
+     #+end_src
+
+     Ta có thể dùng normal mode trên snort bình thường
+     #+DOWNLOADED: screenshot @ 2020-12-11 02:01:11
+     [[file:_assets/2020-12-11_02-01-11_screenshot.png]]
+ Tuy nhiên để dùng IDS mode và load được file /etc/snort/snort.conf, ta phải thay đổi snort.conf file
+#+DOWNLOADED: screenshot @ 2020-12-11 02:03:48
+[[file:_assets/2020-12-11_02-03-48_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-11 02:04:18
+[[file:_assets/2020-12-11_02-04-18_screenshot.png]]
+- Tiếp tục comment các dòng lệnh không cần thiết đu cho tới khi câu lệnh sau chạy bình thường, output về bug của giai đoạn này rất rõ ràng.
+  #+begin_src shell
+  snort -c /etc/snort/snort.conf 
+  #+end_src
+
 ** Dùng snort để phát hiện và ngăn chặn ICMP/Ping flood: 
    - ICMP: (Internet Control Message Protocal) là giao thức được thiết kế để kiểm tra xem đường truyền internet có hoạt động bình thường không. IP A sẽ gửi các message tới ip  B ở các cổng xác định và nếu  B phản hồi lại thì cổng đó sẽ có thể nhận tính hiệu.
-   - ICMP vận hành ở layer 4, không phải là một transport protocal, nên không dùng để truyền dữ liệu.
+   - ICMP vận hành ở layer 3, không phải là một transport protocal, nên không dùng để truyền dữ liệu.
    - ICMP thường được phát ra bởi chương trình ping.
    - Kiểu tấn công DoS dựa trên ICMP lợi dụng cơ chế mỗi tín hiệu ICMP gửi phải được phản hồi nếu cổng đó hoạt động bình thường. Và nếu phải phản hồi quá nhiều tín hiệu cùng một lúc sẽ dẫn đến việc đối tượng bị quá tải.
 
@@ -338,3 +377,7 @@ Advanture attack -> write script that auto attack with http request. USe burpsui
 
 #+RESULTS:
 : 2000
+
+* Footnotes
+
+[fn:1] https://www.intechopen.com/books/computer-and-network-security/anomaly-based-intrusion-detection-system
