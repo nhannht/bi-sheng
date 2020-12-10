@@ -3,6 +3,30 @@
 
 - 
 
+* Mile stone:  [3/14]
+** TODO Snort in general
+   DEADLINE: <2020-12-10 Thu>
+** DONE ICMP reflection -> hping
+** TODO ICMP packet injection -> ping of death
+   DEADLINE: <2020-12-10 Thu>
+*** Use proxy, iptables, firewall to mitigate                         :bonus:
+*** TODO Scripting instead of use tool                                :bonus:
+** DONE TCP bandwhich-consumming reflection base -> hping
+** DONE HTTP slow and low -> slowloris
+** TODO HTTP bandwhich consuming
+   DEADLINE: <2020-12-10 Thu>
+** TODO UDP bandwhich-consuming -> UDP flood
+** TODO NTP amplication
+** TODO DNS flood -reflection
+** TODO DNS amplication
+** TODO Voip in general
+** TODO Aterisk in general
+   DEADLINE: <2020-12-10 Thu>
+** TODO same subnet asterisk deploy
+   DEADLINE: <2020-12-10 Thu>
+** TODO over internet asterisk deply
+   DEADLINE: <2020-12-10 Thu>
+
 
 
 * CƠ SỞ LÝ THUYẾT:

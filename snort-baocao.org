@@ -1,35 +1,98 @@
 
 #+DOWNLOADED: screenshot @ 2020-12-04 13:43:14
 [[file:_assets/2020-12-04_13-43-14_screenshot.png]]
-* Mile stone:  [3/14]
-** TODO Snort in general
-   DEADLINE: <2020-12-10 Thu>
-** DONE ICMP reflection -> hping
-** TODO ICMP packet injection -> ping of death
-   DEADLINE: <2020-12-10 Thu>
-*** Use proxy, iptables, firewall to mitigate                         :bonus:
-*** TODO Scripting instead of use tool                                :bonus:
-** DONE TCP bandwhich-consumming reflection base -> hping
-** DONE HTTP slow and low -> slowloris
-** TODO HTTP bandwhich consuming
-   DEADLINE: <2020-12-10 Thu>
-** TODO UDP bandwhich-consuming -> UDP flood
-** TODO NTP amplication
-** TODO DNS flood -reflection
-** TODO DNS amplication
-** TODO Voip in general
-** TODO Aterisk in general
-   DEADLINE: <2020-12-10 Thu>
-** TODO same subnet asterisk deploy
-   DEADLINE: <2020-12-10 Thu>
-** TODO over internet asterisk deply
-   DEADLINE: <2020-12-10 Thu>
-
-
-
+#+begin_comment
+* Project: Mile stone:  [3/14]
+*** TODO Snort in general
+*** DONE ICMP reflection -> hping
+*** TODO ICMP packet injection -> ping of death
+**** Use proxy, iptables, firewall to mitigate
+**** TODO Scripting instead of use tool
+*** DONE TCP bandwhich-consumming reflection base -> hping
+*** DONE HTTP slow and low -> slowloris
+*** TODO HTTP bandwhich consuming
+*** TODO UDP bandwhich-consuming -> UDP flood
+*** TODO NTP amplication
+*** TODO DNS flood -reflection
+*** TODO DNS amplication
+*** Smurt attack
+*** Fraggle attack
+*** LOIC attack
+*** HOIC attack
+*** SNMP amplication
+*** SSDP amplication
+*** TODO Voip in general
+*** TODO Aterisk in general
+*** Ping of death
+*** TODO same subnet asterisk deploy
+*** TODO over internet asterisk deply
+*** snort sam
+*** Docker built
+*** Preprocessor
+*** snort plug
+ #+end_comment
+*** DVWA
+*** None DOs attack:
+**** XSS
+**** SQL injection
+     - 
+* Lời mở đầu:
+** Tầm quan trọng của IDS/IPS
+** Sự nguy hiểm của tấn công DoS
+** Tóm tắt nội dung:
+  - Bài tiểu luận cho môn mạng máy tính nâng cao
+  - Nội dung:
+    - tìm hiểu về IDS/IPS (hệ thống phát hiện/phòng chống nỗ lực tấn công từ bên ngoài vào mạng lưới).
+    - tìm hiểu về snort. Framework điểu hình về IDS/IPS
+    - tìm hiểu về DoS/DDoS attack
+    - Xây dựng hệ thống IDS/IPS với snort là trung tâm phòng thủ và DDos là kỹ thuật tấn công chính. GNS3 là môi trường thực nghiệm
+** Tóm tắt hướng nghiên cứu:
+*** Về lý thuyết: Snort sở hữu 1 hệ thống tài liệu phong phú và đầy đủ về nội dung lẫn ví dụ, nhóm chủ yếu sẽ tổng hợp lại ở các phần: 
+**** Cách cài đặt
+**** Cách set up các rules cơ bản để đối phó với từng kiểu tấn công DDoS
+**** Cách sử dụng các extension mở rộng
+*** Về DoS, hướng tân công này rất đa dạng, nhóm phân loại theo 2 hướng:
+**** Dựa trên OSI model:
+***** Layer 3 (Internet Protocol layer): ping flood, Ping of Death
+***** Layer 4 (Transport layer): udp flood, tcp flood,....
+***** Layer 5-6-7 (Application Layers): dùng https
+**** Dựa trên hướng tân công:
+***** Volumetric Attack: tạo ra một lượng lớn traffic để làm tràn bandwidth của hệ thống nạn nhân: TCP/UPD flood, NTP amplication, DNS amplication
+***** Protocol Base Attack: dựa trên cách hoạt động của các giao thức ở layer 3 và layer 4.   Sync Flood, Ping of Death, DNS amplication, ...
+***** Application Attack: hướng khai thác này phụ thuộc vào loại application. Mỗi chương trình sẽ có các nhược điểm riêng của nó. Như Apache sẽ bị tổn thương theo mặc định  (nếu không được điều chỉnh ) bởi HTTP low-and-slow attack, trong khi Nginx hay Nodejs sẽ không bị ảnh hưởng
+*** Về thực nghiệm:
+    - thực hiện các lab trên gns3,
+    - các máy ảo dùng docker container: 1 Centos-server - server nạn nhân, 5 blackarch - botnet được điều khiển bởi attacker, 1 alpine linux - máy client thông thường 
+    - Các thiết bị khác thuộc network: Cisco IOS router, 4 open-switch  của GNS3 team, 4 "máy ảo" mini do VPCS (không thật sự là hệ điều hành, chỉ có các tính năng như ping hay dhcp request) - đóng vai trò như client thông thường .
+    - Nmap, Wireshark.
+    - Mô phỏng các hướng DOS cụ thể: ping flood, ping of death, tcp syn-ack flood, udp flood, dns amplication, slow-and-slow http attack, http flood
+    - Ngoài ra còn thêm vài kỹ thuật không phải DoS: sql injection,...
+    - Mục tiêu: thể hiện được được truyền của đối tượng bị suy giảm mạnh, hoặc thậm chí đối tượng bị crash hoặc không truy cập được(web server). Thể hiện sự khác biệt về lượng traffic ở môi trường khoẻ mạnh và môi trường bị DDoS. Dùng Snort để phát hiện và log thông tin về các kiểu tấn công này. Nêu ra được giải pháp phòng thủ: có thể dùng snort extension, hoặc iptables, hoặc điều chỉnh trên chính apache2, trên các router.
+    
 * Cơ sở lý thuyết:
+** Bàn về tầm quan trọng của đề tài:
+   - 
 
-** IDS là gì
+** IDS/IPS là gì:
+   - Instrution detectin system (IDS) là các hệ thống hỗ trợ phát hiện các mối nguy từ network và lưu lại (log) các mối nguy này nếu cần
+   - Instrution detecting system (IPS) là hệ thống hỗ trợ ngăn chặn các mối nguy hiểm từ network 
+   - IDS/IPS thường luôn đi kèm với nhau, nhằm đảm báo tính an toàn của mạng máy tính.
+   - Chức năng chính có thể chia ra làm các mục sau:
+     - Như một bộ lọc lưu lại các packet đi qua nó (packet filter) dựa trên các rules được đặt sẵn bởi người dùng ( bằng tay hoặc qua các database có sẵn và được cập nhật thường xuyên)
+     - Báo động nếu các packet thoã mãn một số rules mà được cho là nguy hiểm
+     - Ngăn chặn hoặc hạn chế các packet
+   - Một số đặt tính tiêu biểu của IPS/IDS:
+     - Tự động hoá (automation) 
+     - Cung cấp tính năng đa dạng cho người điều khiển (Compliance)
+     - Dựa trên rules (policy enforcement): 
+#+begin_comment
+https://www.varonis.com/blog/ids-vs-ips/
+https://www.dnsstuff.com/ids-vs-ips
+#+end_comment
+
+#+begin_comment
+https://www2.slideshare.net/buianloc/he-thong-phat-hien-xam-nhap-ids
+#+end_comment
 ** DDos/DoS:
    - Dos ((Distribute) Denial of Service) là kiểu tấn công (từ chối dịch vụ).
    - Mục đích: Làm gián đoạn quá trình vận hành của hệ thống                 
@@ -268,3 +331,10 @@ Advanture attack -> write script that auto attack with http request. USe burpsui
 - UDP-DNS flood attack
 - DNS amplication attack
 #+end_comment
+
+#+begin_src octave
+1000*2
+#+end_src
+
+#+RESULTS:
+: 2000
