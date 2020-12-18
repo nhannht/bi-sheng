@@ -1,0 +1,10 @@
+Asterisk
+* Tổng quan về voip
+* Tổng quan về asterisk
+* TODO  3 proplem với asterisk
+  - [ ] Solution 1: Kết nối asterisk 3 thiết bị 2 máy và 1 điện thoại
+  - [ ] Solution 2: conference with asterisk 
+  - [ ] 3 : video call with asterisk 3
+  - [ ] 4: large office with different sub kết hợp với cisco technology
+  - [ ] 5: Dùng freepbx thiết kết nố asterisk over internet
+  - [ ] 6: 1 bài exploit voip
