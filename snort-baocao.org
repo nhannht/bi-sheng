@@ -1,4 +1,5 @@
-
+#+TITLE: Snort-báo-cáo
+* Topo 1: 
 #+DOWNLOADED: screenshot @ 2020-12-04 13:43:14
 [[file:_assets/2020-12-04_13-43-14_screenshot.png]]
 
@@ -43,298 +44,370 @@
 
  
       - 
-* Lời mở đầu:
-** Tầm quan trọng của IDS/IPS
-** Sự nguy hiểm của tấn công DoS
-** Tóm tắt nội dung:
-  - Bài tiểu luận cho môn mạng máy tính nâng cao
-  - Nội dung:
-    - tìm hiểu về IDS/IPS (hệ thống phát hiện/phòng chống nỗ lực tấn công từ bên ngoài vào mạng lưới).
-    - tìm hiểu về snort. Framework điểu hình về IDS/IPS
-    - tìm hiểu về DoS/DDoS attack
-    - Xây dựng hệ thống IDS/IPS với snort là trung tâm phòng thủ và DDos là kỹ thuật tấn công chính. GNS3 là môi trường thực nghiệm
-** Tóm tắt hướng nghiên cứu:
-*** Về lý thuyết: Snort sở hữu 1 hệ thống tài liệu phong phú và đầy đủ về nội dung lẫn ví dụ, nhóm chủ yếu sẽ tổng hợp lại ở các phần: 
-**** Cách cài đặt
-**** Cách set up các rules cơ bản để đối phó với từng kiểu tấn công DDoS
-**** Cách sử dụng các extension mở rộng
-*** Về DoS, hướng tân công này rất đa dạng, nhóm phân loại theo 2 hướng:
-**** Dựa trên OSI model:
-***** Layer 3 (Internet Protocol layer):
-      -ping flood, Ping of Death
-***** Layer 4 (Transport layer): -
-      udp flood, tcp flood,....
-***** Layer 5-6-7 (Application Layers):
-      - dùng https
-**** Dựa trên hướng tân công:
-***** Volumetric Attack:
-      - tạo ra một lượng lớn traffic để làm tràn bandwidth của hệ thống nạn nhân: TCP/UPD flood, NTP amplication, DNS amplication
-***** Protocol Base Attack:
-      - dựa trên cách hoạt động của các giao thức ở layer 3 và layer 4.   Sync Flood, Ping of Death, DNS amplication, ...
-***** Application Attack:
-      - hướng khai thác này phụ thuộc vào loại application. Mỗi chương trình sẽ có các nhược điểm riêng của nó. Như Apache sẽ bị tổn thương theo mặc định  (nếu không được điều chỉnh ) bởi HTTP low-and-slow attack, trong khi Nginx hay Nodejs sẽ không bị ảnh hưởng
-*** Về thực nghiệm:
-    - thực hiện các lab trên gns3,
-    - các máy ảo dùng docker container: 1 Centos-server - server nạn nhân, 5 blackarch - botnet được điều khiển bởi attacker, 1 alpine linux - máy client thông thường 
-    - Các thiết bị khác thuộc network: Cisco IOS router, 4 open-switch  của GNS3 team, 4 "máy ảo" mini do VPCS (không thật sự là hệ điều hành, chỉ có các tính năng như ping hay dhcp request) - đóng vai trò như client thông thường .
-    - Nmap, Wireshark.
-    - Mô phỏng các hướng DOS cụ thể: ping flood, ping of death, tcp syn-ack flood, udp flood, dns amplication, slow-and-slow http attack, http flood
-    - Ngoài ra còn thêm vài kỹ thuật không phải DoS: sql injection,...
-    - Mục tiêu: thể hiện được được truyền của đối tượng bị suy giảm mạnh, hoặc thậm chí đối tượng bị crash hoặc không truy cập được(web server). Thể hiện sự khác biệt về lượng traffic ở môi trường khoẻ mạnh và môi trường bị DDoS. Dùng Snort để phát hiện và log thông tin về các kiểu tấn công này. Nêu ra được giải pháp phòng thủ: có thể dùng snort extension, hoặc iptables, hoặc điều chỉnh trên chính apache2, trên các router.
+** Lời mở đầu:
+*** Tầm quan trọng của IDS/IPS
+*** Sự nguy hiểm của tấn công DoS
+*** Tóm tắt nội dung:
+   - Bài tiểu luận cho môn mạng máy tính nâng cao
+   - Nội dung:
+     - tìm hiểu về IDS/IPS (hệ thống phát hiện/phòng chống nỗ lực tấn công từ bên ngoài vào mạng lưới).
+     - tìm hiểu về snort. Framework điểu hình về IDS/IPS
+     - tìm hiểu về DoS/DDoS attack
+     - Xây dựng hệ thống IDS/IPS với snort là trung tâm phòng thủ và DDos là kỹ thuật tấn công chính. GNS3 là môi trường thực nghiệm
+*** Tóm tắt hướng nghiên cứu:
+**** Về lý thuyết: Snort sở hữu 1 hệ thống tài liệu phong phú và đầy đủ về nội dung lẫn ví dụ, nhóm chủ yếu sẽ tổng hợp lại ở các phần: 
+***** Cách cài đặt
+***** Cách set up các rules cơ bản để đối phó với từng kiểu tấn công DDoS
+***** Cách sử dụng các extension mở rộng
+**** Về DoS, hướng tân công này rất đa dạng, nhóm phân loại theo 2 hướng:
+***** Dựa trên OSI model:
+****** Layer 3 (Internet Protocol layer):
+       -ping flood, Ping of Death
+****** Layer 4 (Transport layer): -
+       udp flood, tcp flood,....
+****** Layer 5-6-7 (Application Layers):
+       - dùng https
+***** Dựa trên hướng tân công:
+****** Volumetric Attack:
+       - tạo ra một lượng lớn traffic để làm tràn bandwidth của hệ thống nạn nhân: TCP/UPD flood, NTP amplication, DNS amplication
+****** Protocol Base Attack:
+       - dựa trên cách hoạt động của các giao thức ở layer 3 và layer 4.   Sync Flood, Ping of Death, DNS amplication, ...
+****** Application Attack:
+       - hướng khai thác này phụ thuộc vào loại application. Mỗi chương trình sẽ có các nhược điểm riêng của nó. Như Apache sẽ bị tổn thương theo mặc định  (nếu không được điều chỉnh ) bởi HTTP low-and-slow attack, trong khi Nginx hay Nodejs sẽ không bị ảnh hưởng
+**** Về thực nghiệm:
+     - thực hiện các lab trên gns3,
+     - các máy ảo dùng docker container: 1 Centos-server - server nạn nhân, 5 blackarch - botnet được điều khiển bởi attacker, 1 alpine linux - máy client thông thường 
+     - Các thiết bị khác thuộc network: Cisco IOS router, 4 open-switch  của GNS3 team, 4 "máy ảo" mini do VPCS (không thật sự là hệ điều hành, chỉ có các tính năng như ping hay dhcp request) - đóng vai trò như client thông thường .
+     - Nmap, Wireshark.
+     - Mô phỏng các hướng DOS cụ thể: ping flood, ping of death, tcp syn-ack flood, udp flood, dns amplication, slow-and-slow http attack, http flood
+     - Ngoài ra còn thêm vài kỹ thuật không phải DoS: sql injection,...
+     - Mục tiêu: thể hiện được được truyền của đối tượng bị suy giảm mạnh, hoặc thậm chí đối tượng bị crash hoặc không truy cập được(web server). Thể hiện sự khác biệt về lượng traffic ở môi trường khoẻ mạnh và môi trường bị DDoS. Dùng Snort để phát hiện và log thông tin về các kiểu tấn công này. Nêu ra được giải pháp phòng thủ: có thể dùng snort extension, hoặc iptables, hoặc điều chỉnh trên chính apache2, trên các router.
     
-* Cơ sở lý thuyết:
+** Cơ sở lý thuyết:
 
-** IDS/IPS là gì:
-   - Instrusion detection (hệ thống phát hiện thâm nhập) là một bộ các kỹ thuật và phương pháp được thiết kế để phát hiện những hành vi có thể gây nguy hại tới hệ thống (theo nghĩa toàn bộ hệ thống hoặc từng thành phần riêng lẻ). IDS rới vào 2 nhóm chính: Signature-based IDS (dựa trên chữ ký) và anomaly detection IDS (dựa trên sự bất thường ).
-   - Những đối tượng xâm nhậm có chữ ký (như virus máy tính), có thể bị phát hiện bởi các phần mềm. IDS dựa trên chữ ký số hoạt động dưa trên việc đối chiếu nội dung của đối tượng với các chữ ký được lưu lại trên các database về malware hoặc các rule được người vận hành IDS thiết lập bằng tay -> Nếu phát hiện sẽ báo động
-   - Ngược lại IDS based anamoly dựa trên các mô hình máy học để phát hiện các mối nguy hiểm. Phần này sẽ không đi sâu vào trong bài tiểu luận này
-   - Snort thuộc nhóm 1: tức rules-signature IDS, tuy nhiên một số extension của snort hỗ trợ nhóm 2.
+*** IDS/IPS là gì:
+    - Instrusion detection (hệ thống phát hiện thâm nhập) là một bộ các kỹ thuật và phương pháp được thiết kế để phát hiện những hành vi có thể gây nguy hại tới hệ thống (theo nghĩa toàn bộ hệ thống hoặc từng thành phần riêng lẻ). IDS rới vào 2 nhóm chính: Signature-based IDS (dựa trên chữ ký) và anomaly detection IDS (dựa trên sự bất thường ).
+    - Những đối tượng xâm nhậm có chữ ký (như virus máy tính), có thể bị phát hiện bởi các phần mềm. IDS dựa trên chữ ký số hoạt động dưa trên việc đối chiếu nội dung của đối tượng với các chữ ký được lưu lại trên các database về malware hoặc các rule được người vận hành IDS thiết lập bằng tay -> Nếu phát hiện sẽ báo động
+    - Ngược lại IDS based anamoly dựa trên các mô hình máy học để phát hiện các mối nguy hiểm. Phần này sẽ không đi sâu vào trong bài tiểu luận này
+    - Snort thuộc nhóm 1: tức rules-signature IDS, tuy nhiên một số extension của snort hỗ trợ nhóm 2.
      
-     - Theo trang [[https://cybersecurityventures.com/hackerpocalypse-cybercrime-report-2016/][cypersecurityventure.com]]: tổn hại do tội phạm mạng gây ra sẽ làm tổn thất 10,5 tỉ tỉ đô của thế giới vào năm 2025
-     - Theo trang [[https://www.securitymagazine.com/articles/90493-cyber-attacks-cost-45-billion-in-2018][www.securitymagazine.com]]: chỉ trong năm 2018 các cuộc tấn công mạng đã làm tổn thất $45 tỉ đô của toàn thế giớ. Ta thấy chi phí tổn hại sẽ tăng gấp 240 lần chỉ trong 7 năm nếu số liệu từ 2 trang trên tương đối đúng
-     #+begin_comment
-     - Lấy ví dụ ngay trên topo, một doanh nghiệp trung bình thuê 3 cisco router và 5 cisco switching
-       | router3640     | 170$*3=510 |
-       | cisco catalyst |            |
-     #+end_comment
-** Snort: 
-   - Snort là một bộ chương trình IDS mã nguồn mở, hoạt động dựa trên các rules store ở text files có thể dễ dành edit bằng các text editor.
-   - Các rules của snort được nhóm thành các chủ đề khác nhau. Và ngoài ra có thể chia nhỏ ra thành các files khác nhau. Snort có 1 file config chính là snort.conf .
-   - Nên đặt snort nói riêng hay IDS/IPS ở vị trí nào trên network:
-     - Ngoài tường lửa:
-       #+DOWNLOADED: screenshot @ 2020-12-11 01:03:38
-       [[file:_assets/2020-12-11_01-03-37_screenshot.png]]
-     - Để thực hiện được điều này, edge-router/switch phải có chức năng port-mirroring, tức sẽ copy các packet chạy qua port nối với máy cần bảo vệ (vì máy vận hành snort cũng là một end device, nó phải thông qua một router trung gian để capture packet ) và gửi nó tới IDS đang vận hành snort hoặc các chương trình tương tự. Ưu điểm của cách thiết kế mạng này là ta có thể capture hết tất cả các packet chạy từ external network vào bên trong network cần bảo vệ. Và ta chỉ cần duy nhất 1 máy vận hành IDS -snort. Cisco switch hỗ trợ tính năng SPAN (Switch Port Analyzer) và Cisco Router hỗ trợ tính năng RITE (Router IP Traffic Export) để copy các packet và gửi nó tới máy vận hành IDS, ta gọi tính năng này là port-mirroring
-   - Đằng sau hoặc trong tường lửa: Đơn giản là cài đặt snort trực tiếp trên end device - server cần bảo vệ. Cách này thường không ổn với các IDS cồng kềnh, nhưng ở đây snort được coi là một IDS gọn nhẹ, nên ta cá thể cài snort trên mỗi server khác nhau. Ưu điểm là các packet được lọc qua fỉrewall filter trước nên ta có thể testing xem còn mối nguy hiểm nào mà firewall không lọc đuợc không. Ta cũng tốn ít rules hơn trên mỗi snort
-       #+DOWNLOADED: screenshot @ 2020-12-11 01:14:15
-       [[file:_assets/2020-12-11_01-14-15_screenshot.png]]
+      - Theo trang [[https://cybersecurityventures.com/hackerpocalypse-cybercrime-report-2016/][cypersecurityventure.com]]: tổn hại do tội phạm mạng gây ra sẽ làm tổn thất 10,5 tỉ tỉ đô của thế giới vào năm 2025
+      - Theo trang [[https://www.securitymagazine.com/articles/90493-cyber-attacks-cost-45-billion-in-2018][www.securitymagazine.com]]: chỉ trong năm 2018 các cuộc tấn công mạng đã làm tổn thất $45 tỉ đô của toàn thế giớ. Ta thấy chi phí tổn hại sẽ tăng gấp 240 lần chỉ trong 7 năm nếu số liệu từ 2 trang trên tương đối đúng
+      #+begin_comment
+      - Lấy ví dụ ngay trên topo, một doanh nghiệp trung bình thuê 3 cisco router và 5 cisco switching
+        | router3640     | 170$*3=510 |
+        | cisco catalyst |            |
+      #+end_comment
+*** Snort: 
+    - Snort là một bộ chương trình IDS mã nguồn mở, hoạt động dựa trên các rules store ở text files có thể dễ dành edit bằng các text editor.
+    - Các rules của snort được nhóm thành các chủ đề khác nhau. Và ngoài ra có thể chia nhỏ ra thành các files khác nhau. Snort có 1 file config chính là snort.conf .
+    - Nên đặt snort nói riêng hay IDS/IPS ở vị trí nào trên network:
+      - Ngoài tường lửa:
+        #+DOWNLOADED: screenshot @ 2020-12-11 01:03:38
+        [[file:_assets/2020-12-11_01-03-37_screenshot.png]]
+      - Để thực hiện được điều này, edge-router/switch phải có chức năng port-mirroring, tức sẽ copy các packet chạy qua port nối với máy cần bảo vệ (vì máy vận hành snort cũng là một end device, nó phải thông qua một router trung gian để capture packet ) và gửi nó tới IDS đang vận hành snort hoặc các chương trình tương tự. Ưu điểm của cách thiết kế mạng này là ta có thể capture hết tất cả các packet chạy từ external network vào bên trong network cần bảo vệ. Và ta chỉ cần duy nhất 1 máy vận hành IDS -snort. Cisco switch hỗ trợ tính năng SPAN (Switch Port Analyzer) và Cisco Router hỗ trợ tính năng RITE (Router IP Traffic Export) để copy các packet và gửi nó tới máy vận hành IDS, ta gọi tính năng này là port-mirroring
+    - Đằng sau hoặc trong tường lửa: Đơn giản là cài đặt snort trực tiếp trên end device - server cần bảo vệ. Cách này thường không ổn với các IDS cồng kềnh, nhưng ở đây snort được coi là một IDS gọn nhẹ, nên ta cá thể cài snort trên mỗi server khác nhau. Ưu điểm là các packet được lọc qua fỉrewall filter trước nên ta có thể testing xem còn mối nguy hiểm nào mà firewall không lọc đuợc không. Ta cũng tốn ít rules hơn trên mỗi snort
+        #+DOWNLOADED: screenshot @ 2020-12-11 01:14:15
+        [[file:_assets/2020-12-11_01-14-15_screenshot.png]]
 
-** DDos/DoS:
-   - Dos ((Distribute) Denial of Service - tấn công từ chối dịch vụ ) chỉ các kiểu tấn công mạng mà ở đó những kẻ tấn công cố gắng khiến cho một máy tính hoặc một hệ thống máy tính không thể hoặt động bình thường và cung cấp dịch vụ cho những người dùng thông thường của nó. 
-   - Mục đích: Làm gián đoạn quá trình vận hành của hệ thống                 
-   - Mục tiêu: có thể là một network gồm nhiều thiết bị kết nối với nhau, có thể là chỉ là một router vận hành ở layer 3,4 cũng có thể là một webserver ở application level.
-   - Đặc điểm :
-     - Attacker gửi lớn yêu cầu rác (spam requests) tới đối tượng tấn công, lợi dụng cơ chế mặc định là đối tượng với phản hồi (response ) các yêu cầu này, khi lượng request quá nhiều vượt quá khả năng vận hành của mục tiêu bị tấn công, sẽ dẫn đến việc server (hoặc mạng máy tính) bị quá tải, và cạn kiệt các tài nguyên cần thiết (như băng thông, hoặc số thread tối đa để duy trì kết nối). Nếu đối tượng bị tấn công là server vận hành ứng dụng web (như apache) sẽ dẫn đến người dùng bình thường không truy cập được. Nếu là 1 router hay một switch layer 3 trong hệ thống mạng của 1 công ty, tổ chức. Có thể dẫn đến những việc vận hành không chính xác. Làm chậm được truyền hệ thống. Mở màn cho những kỹ thuật tấn công khác đi tiếp theo.(như DHCP spoofing nếu DHCP server bị tấn công bởi UDP flood)
-     - Dos thường cần có sự phối hợp từ rất nhiều máy tính (lên tới hàng nghìn) cùng gửi yêu cầu rác về đối tượng tấn công. Vì tấn công từ 1 máy thường không đạt được hiệu quả. Các máy tính này còn là zombie machine. Do bị nhúng mã độc từ trước bởi kẻ tấn công và các mã độc này sẽ nằm ẩn trong máy. Khi kẻ tấn công phát động từ xa, hàng loạt các máy zombie sẽ cùng gửi request tới mục tiêu. Do đó Dos có 1 cái tên khác là DDoS, nghĩa Distributed DoS.
+*** DDos/DoS:
+    - Dos ((Distribute) Denial of Service - tấn công từ chối dịch vụ ) chỉ các kiểu tấn công mạng mà ở đó những kẻ tấn công cố gắng khiến cho một máy tính hoặc một hệ thống máy tính không thể hoặt động bình thường và cung cấp dịch vụ cho những người dùng thông thường của nó. 
+    - Mục đích: Làm gián đoạn quá trình vận hành của hệ thống                 
+    - Mục tiêu: có thể là một network gồm nhiều thiết bị kết nối với nhau, có thể là chỉ là một router vận hành ở layer 3,4 cũng có thể là một webserver ở application level.
+    - Đặc điểm :
+      - Attacker gửi lớn yêu cầu rác (spam requests) tới đối tượng tấn công, lợi dụng cơ chế mặc định là đối tượng với phản hồi (response ) các yêu cầu này, khi lượng request quá nhiều vượt quá khả năng vận hành của mục tiêu bị tấn công, sẽ dẫn đến việc server (hoặc mạng máy tính) bị quá tải, và cạn kiệt các tài nguyên cần thiết (như băng thông, hoặc số thread tối đa để duy trì kết nối). Nếu đối tượng bị tấn công là server vận hành ứng dụng web (như apache) sẽ dẫn đến người dùng bình thường không truy cập được. Nếu là 1 router hay một switch layer 3 trong hệ thống mạng của 1 công ty, tổ chức. Có thể dẫn đến những việc vận hành không chính xác. Làm chậm được truyền hệ thống. Mở màn cho những kỹ thuật tấn công khác đi tiếp theo.(như DHCP spoofing nếu DHCP server bị tấn công bởi UDP flood)
+      - Dos thường cần có sự phối hợp từ rất nhiều máy tính (lên tới hàng nghìn) cùng gửi yêu cầu rác về đối tượng tấn công. Vì tấn công từ 1 máy thường không đạt được hiệu quả. Các máy tính này còn là zombie machine. Do bị nhúng mã độc từ trước bởi kẻ tấn công và các mã độc này sẽ nằm ẩn trong máy. Khi kẻ tấn công phát động từ xa, hàng loạt các máy zombie sẽ cùng gửi request tới mục tiêu. Do đó Dos có 1 cái tên khác là DDoS, nghĩa Distributed DoS.
       
-* Kịch bản thực hành:
+*** IPtables:         
 
-** Cài đặt snort trên centos:
+    - Iptables là command line tool dùng để chỉnh firewall của linux kernel, thuộc [[https://en.wikipedia.org/wiki/Netfilter][Netfilter Project]], iptables là có ưu điểm là tuổi đời lâu, mã nguồn mở, vẫn tiếp tục được phát triển ở thời điểm hiện tại, chức năng rất phong phú, hộ trợ cross platform, vì là firewall ở tầng kernel nên rất mạnh mẽ ( và cũng rất nguy hiểm nếu config sai).
+    - Sơ lược về cơ chế hoạt động: Iptables xoay quanh 3 khái niệm chính là chain, table và rules.
+      - Chain là khái niệm thường gặp nhất, in ra bằng câu lệnh
+      #+begin_src shell
+iptables -L
+      #+end_src
 
-   - Snort - vốn là một ứng dụng mã nguồn mở, nên thường đa dạng trong cách cài đặt, do các ứng dụng mã nguồn mở thường được dùng ở nhiều môi trường khác nhau, từ nền tảng x86 như GNU/linux tới FreeBSD,OpenBSD,...Window. Thậm chí là các kiến trúc Sparc như Solaris, MacOS-X...
-   - Ở đây ta thực hiện cài đặt trên snort:
-   - Để nhanh chóng ta sẽ viết một đoạn perl script để tự động hoá quá trình này. 
-   #+begin_src perl
-     # install_snort.pl
-     use strict;
-     use warnings;
+#+DOWNLOADED: screenshot @ 2020-12-19 02:29:59
+    - Tables là đơn vị lớn hơn chains, bao gồm raw,filter,nat,mangle,security. THực tế khi ta dùng ~iptables -L,~ ta mặc định in ra các chain trong table ~filter~
+    - Rules: là tổ hợp giữa chain và các option. Chain, về bản chất, chỉ là một cái tên, một alias để người dùng dễ tổ chức các rules, tables filter có 3 default chain là INPUT,OUTPUT,FORWARD, tự các cụm từ này sẽ không có ý nghĩa nếu nó không có các options đi kèm với nó
+
+    - Mặc định 1 linux mới cài đặt sẽ đi kèm 3 rules sau:
+      #+begin_src shell
+iptables -nvL
+
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain OUTPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+      #+end_src
+    - Ta thấy policy là trong những option đi kèm với cả 3 chain trên, policy là một option được áp vào một chain mặc định và chỉ có 2 giá trị là DROP/ACCEPT.
+    - Ta áp policy và một rule bằng flag -P (~iptables -P <chain> <rules>~) và ngược lại nếu dùng option flag -S ta sẽ in ra rules của 1 chain
+    - 
+    #+begin_src shell
+iptables -S INPUT
+    #+end_src
+#+DOWNLOADED: screenshot @ 2020-12-19 02:42:22
+[[file:_assets/2020-12-19_02-42-22_screenshot.png]]
+
+    - Bài này không đi sâu vào iptables, nên chỉ nói sơ lược như thế, một số ví dụ về iptables
+      #+begin_src shell
+        #cho phép kết nối in out của loop back interface
+        iptables -A INPUT -i lo -j ACCEPT
+        iptables -A OUTPUT -o lo -j ACCEPT
+        # -A là option/flag append, tức điền rules vào một chain
+        # -i -o là in/out interface
+        # -j là jump, jump tới một policy (thường là ACCEPT/DROP/REJECT)
+        # Chặn packet từ 1 ip nguồn, -s là source ip
+        iptables -A INPUT -s 192.168.252.10 -j DROP
+      #+end_src
+
+      
+** Kịch bản thực hành:
 
 
-     map {system "$_"}(
-         "echo update and install epel-release, epel-release la mot repo ho tro cac package nang cao ma snort yeu cau, repo nay rat pho bien va moi centos sysamin deu dung",
-         "yum update -y",
-         "yum install epel-release -y",
-         "echo cai dat snort truc tiep tu trang chu cua snort,"
-         "yum install https://www.snort.org/downloads/snort/snort-2.9.17-1.centos8.x86_64.rpm -y",
-         "echo mot loi he thong tren centos 8 khien snort khong phat hien file libnet.1, ta giai quyet nhu sau",
-         "ln -s /usr/lib64/libdnet.so.1.0.1 /usr/lib64/libdnet.1"
-     );
+*** Cài đặt snort trên centos:
 
-   #+end_src
+    - Snort - vốn là một ứng dụng mã nguồn mở, nên thường đa dạng trong cách cài đặt, do các ứng dụng mã nguồn mở thường được dùng ở nhiều môi trường khác nhau, từ nền tảng x86 như GNU/linux tới FreeBSD,OpenBSD,...Window. Thậm chí là các kiến trúc Sparc như Solaris, MacOS-X...
+    - Ở đây ta thực hiện cài đặt trên snort:
+    - Để nhanh chóng ta sẽ viết một đoạn perl script để tự động hoá quá trình này. 
+    #+begin_src perl
+      # install_snort.pl
+      use strict;
+      use warnings;
+
+
+      map {system "$_"}(
+          "echo update and install epel-release, epel-release la mot repo ho tro cac package nang cao ma snort yeu cau, repo nay rat pho bien va moi centos sysamin deu dung",
+          "yum update -y",
+          "yum install epel-release -y",
+          "echo cai dat snort truc tiep tu trang chu cua snort,"
+          "yum install https://www.snort.org/downloads/snort/snort-2.9.17-1.centos8.x86_64.rpm -y",
+          "echo mot loi he thong tren centos 8 khien snort khong phat hien file libnet.1, ta giai quyet nhu sau",
+          "ln -s /usr/lib64/libdnet.so.1.0.1 /usr/lib64/libdnet.1"
+      );
+
+    #+end_src
 
 
    
- #+begin_comment
-       # open my $write , " >" , "/etc/snort/snort.conf";
-       # while (<$write>){
-       #     s/^(dynamic.*$)/#$1/;
- #+end_comment
+  #+begin_comment
+        # open my $write , " >" , "/etc/snort/snort.conf";
+        # while (<$write>){
+        #     s/^(dynamic.*$)/#$1/;
+  #+end_comment
 
 
-     - Ta có thể dùng normal mode trên snort bình thường
+      - Ta có thể dùng normal mode trên snort bình thường
 
-     #+DOWNLOADED: screenshot @ 2020-12-11 02:01:11
-     [[file:_assets/2020-12-11_02-01-11_screenshot.png]]
- Tuy nhiên để dùng IDS mode và load được file /etc/snort/snort.conf, ta phải thay đổi snort.conf file
-#+DOWNLOADED: screenshot @ 2020-12-11 02:03:48
-[[file:_assets/2020-12-11_02-03-48_screenshot.png]]
+      #+DOWNLOADED: screenshot @ 2020-12-11 02:01:11
+      [[file:_assets/2020-12-11_02-01-11_screenshot.png]]
+  Tuy nhiên để dùng IDS mode và load được file /etc/snort/snort.conf, ta phải thay đổi snort.conf file
+ #+DOWNLOADED: screenshot @ 2020-12-11 02:03:48
+ [[file:_assets/2020-12-11_02-03-48_screenshot.png]]
 
-#+DOWNLOADED: screenshot @ 2020-12-11 02:04:18
-[[file:_assets/2020-12-11_02-04-18_screenshot.png]]
-- Tiếp tục comment các dòng lệnh không cần thiết đu cho tới khi câu lệnh sau chạy bình thường, output về bug của giai đoạn này rất rõ ràng.
-  #+begin_src shell
-  snort -c /etc/snort/snort.conf 
-  #+end_src
+ #+DOWNLOADED: screenshot @ 2020-12-11 02:04:18
+ [[file:_assets/2020-12-11_02-04-18_screenshot.png]]
+ - Tiếp tục comment các dòng lệnh không cần thiết đu cho tới khi câu lệnh sau chạy bình thường, output về bug của giai đoạn này rất rõ ràng.
+   #+begin_src shell
+   snort -c /etc/snort/snort.conf 
+   #+end_src
 
-  - Các mode và command-line trong snort:
+   - Các mode và command-line trong snort:
 
     
-    | -A | bật alert mode                                        |
-    | -b | log packet ở tcpdump format                           |
-    | -c | sử dụng config file                                   |
-    | -D | chạy snort ở deamon, background mode                  |
-    | -i | chạy snort trên interface                             |
-    | -l | log snort trên file                                   |
-    | -M | danh sách host MS window snort sẽ báo về nếu có alert |
-    | -T | debug snort.conf                                      |
+     | -A | bật alert mode                                        |
+     | -b | log packet ở tcpdump format                           |
+     | -c | sử dụng config file                                   |
+     | -D | chạy snort ở deamon, background mode                  |
+     | -i | chạy snort trên interface                             |
+     | -l | log snort trên file                                   |
+     | -M | danh sách host MS window snort sẽ báo về nếu có alert |
+     | -T | debug snort.conf                                      |
 
 
 
 
 
-** Dùng snort để phát hiện và ngăn chặn ICMP/Ping flood: 
-   - ICMP: (Internet Control Message Protocal) là giao thức được thiết kế để kiểm tra xem đường truyền internet có hoạt động bình thường không. IP A sẽ gửi các message tới ip  B ở các cổng xác định và nếu  B phản hồi lại thì cổng đó sẽ có thể nhận tính hiệu.
-   - ICMP vận hành ở layer 3, không phải là một transport protocal, nên không dùng để truyền dữ liệu.
-   - ICMP thường được phát ra bởi chương trình ping.
-   - Kiểu tấn công DoS dựa trên ICMP lợi dụng cơ chế mỗi tín hiệu ICMP gửi phải được phản hồi nếu cổng đó hoạt động bình thường. Và nếu phải phản hồi quá nhiều tín hiệu cùng một lúc sẽ dẫn đến việc đối tượng bị quá tải.
+***  ICMP/Ping flood: 
+    - ICMP: (Internet Control Message Protocal) là giao thức được thiết kế để kiểm tra xem đường truyền internet có hoạt động bình thường không. IP A sẽ gửi các message tới ip  B ở các cổng xác định và nếu  B phản hồi lại thì cổng đó sẽ có thể nhận tính hiệu.
+    - ICMP vận hành ở layer 3, không phải là một transport protocal, nên không dùng để truyền dữ liệu.
+    - ICMP thường được phát ra bởi chương trình ping.
+    - Kiểu tấn công DoS dựa trên ICMP lợi dụng cơ chế mỗi tín hiệu ICMP gửi phải được phản hồi nếu cổng đó hoạt động bình thường. Và nếu phải phản hồi quá nhiều tín hiệu cùng một lúc sẽ dẫn đến việc đối tượng bị quá tải.
 
 
- - Attacker: Ta dùng nmap từ blackarch attacker tới centos server:
+  - Attacker: Ta dùng nmap từ blackarch attacker tới centos server:
+  #+begin_src shell
+ nmap -A -T4 10.0.0.1
+  #+end_src
+  #+DOWNLOADED: screenshot @ 2020-12-04 12:22:45
+  [[file:_assets/2020-12-04_12-22-45_screenshot.png]]
+
+ - Attacker:  thấy có 1 cổng được mở.
+ - Attacker: dùng lệnh hping gửi tín hiệu ping tới centos server
  #+begin_src shell
-nmap -A -T4 10.0.0.1
+ hping3 -1 -p 80 -i u1000 10.0.0.1
  #+end_src
- #+DOWNLOADED: screenshot @ 2020-12-04 12:22:45
- [[file:_assets/2020-12-04_12-22-45_screenshot.png]]
+ #+begin_example
+ -1 : gửi icmp, không như ping, hping mặc định là gửi tcp packet
+ -p : cổng
+ -i u1000: interval, mặc định 1s/1packet, nếu u1000 ta gửi 100 packet/s
+ #+end_example
 
-- Attacker:  thấy có 1 cổng được mở.
-- Attacker: dùng lệnh hping gửi tín hiệu ping tới centos server
-#+begin_src shell
-hping3 -1 -p 80 -i u1000 10.0.0.1
-#+end_src
-#+begin_example
--1 : gửi icmp, không như ping, hping mặc định là gửi tcp packet
--p : cổng
--i u1000: interval, mặc định 1s/1packet, nếu u1000 ta gửi 100 packet/s
-#+end_example
+  - Attacker: dùng hping trên cả 3 client cùng lúc chứ không phải 1, tổng tấn công vào centó 
 
- - Attacker: dùng hping trên cả 3 client cùng lúc chứ không phải 1, tổng tấn công vào centó 
+ #+DOWNLOADED: screenshot @ 2020-12-04 13:12:25
+ [[file:_assets/2020-12-04_13-12-25_screenshot.png]]
 
-#+DOWNLOADED: screenshot @ 2020-12-04 13:12:25
-[[file:_assets/2020-12-04_13-12-25_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-04 13:12:49
+ [[file:_assets/2020-12-04_13-12-49_screenshot.png]]
 
-#+DOWNLOADED: screenshot @ 2020-12-04 13:12:49
-[[file:_assets/2020-12-04_13-12-49_screenshot.png]]
-
-#+DOWNLOADED: screenshot @ 2020-12-04 13:13:00
-[[file:_assets/2020-12-04_13-13-00_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-04 13:13:00
+ [[file:_assets/2020-12-04_13-13-00_screenshot.png]]
 
 
 
-#+begin_src shell
-> /dev/null để không show output
-#+end_src
+ #+begin_src shell
+ > /dev/null để không show output
+ #+end_src
 
-#+DOWNLOADED: screenshot @ 2020-12-04 13:16:59
-[[file:_assets/2020-12-04_13-16-59_screenshot.png]]
-Ta thấy từ 1 máy client ta ping tới centos tốc độ response sẽ chậm hơn rất nhiều.
-Hình sau là khi ping bình thường trong tình trạng không bị tấn công
+ #+DOWNLOADED: screenshot @ 2020-12-04 13:16:59
+ [[file:_assets/2020-12-04_13-16-59_screenshot.png]]
+ Ta thấy từ 1 máy client ta ping tới centos tốc độ response sẽ chậm hơn rất nhiều.
+ Hình sau là khi ping bình thường trong tình trạng không bị tấn công
 
-#+DOWNLOADED: screenshot @ 2020-12-04 13:18:34
-[[file:_assets/2020-12-04_13-18-34_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-04 13:18:34
+ [[file:_assets/2020-12-04_13-18-34_screenshot.png]]
 
-- Phiá phòng thủ: Dùng snort với /etc/snort/rules/local.rules:
-  #+DOWNLOADED: screenshot @ 2020-12-04 13:20:24
- [[file:_assets/2020-12-04_13-20-24_screenshot.png]]
+ - Phiá phòng thủ: Dùng snort với /etc/snort/rules/local.rules:
+   #+begin_src snort
+     alert icmp !$HOME_NET any -> $HOME_NET 80 (msg:"icmp flood attack to port 80!!!"; threshold : type threshold,track by_dst, count 200, seconds 60; sid:1000001;rev:1)
 
-  - Ta chạy snort:
+   #+end_src
+   #+DOWNLOADED: screenshot @ 2020-12-04 13:20:24
+  [[file:_assets/2020-12-04_13-20-24_screenshot.png]]
 
-#+begin_src shell
-centos > snort -A console  -c /etc/snort/snort.conf -i eth0
-#+end_src
-#+begin_example
--A console: kích hoạt alert mode và in output ra console
--c : dùng file config, đây còn gọi là snipper mode, nếu không dùng file config, snort mặt định sẽ ghi lại tất cả các packet, và không alert.
--i eth0 : listen trên eth0, tránh trường hợp nhầm với các interface khác (như lo)
-#+end_example
- - Và snort báo cho ta output. Đây chỉ là output trong  5s, từ 1 attack machine
+   - Ta chạy snort:
 
-#+DOWNLOADED: screenshot @ 2020-12-04 13:28:07
-[[file:_assets/2020-12-04_13-28-07_screenshot.png]]
+ #+begin_src shell
+ centos > snort -A console  -c /etc/snort/snort.conf -i eth0
+ #+end_src
+ #+begin_example
+ -A console: kích hoạt alert mode và in output ra console
+ -c : dùng file config, đây còn gọi là snipper mode, nếu không dùng file config, snort mặt định sẽ ghi lại tất cả các packet, và không alert.
+ -i eth0 : listen trên eth0, tránh trường hợp nhầm với các interface khác (như lo)
+ #+end_example
+  - Và snort báo cho ta output. Đây chỉ là output trong  5s, từ 1 attack machine
 
-#+DOWNLOADED: screenshot @ 2020-12-04 13:28:50
-[[file:_assets/2020-12-04_13-28-50_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-04 13:28:07
+ [[file:_assets/2020-12-04_13-28-07_screenshot.png]]
 
-#+DOWNLOADED: screenshot @ 2020-12-04 13:29:14
-[[file:_assets/2020-12-04_13-29-14_screenshot.png]]
-- Ta thấy chỉ trong 5s snort đã ghi nhận và báo động hơn 700 packet icmp. So với nếu ta ping thông thường từ 1 client thông thường
-  #+DOWNLOADED: screenshot @ 2020-12-04 13:31:43
-  [[file:_assets/2020-12-04_13-31-43_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-04 13:28:50
+ [[file:_assets/2020-12-04_13-28-50_screenshot.png]]
 
-#+DOWNLOADED: screenshot @ 2020-12-04 13:31:54
-[[file:_assets/2020-12-04_13-31-54_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-04 13:29:14
+ [[file:_assets/2020-12-04_13-29-14_screenshot.png]]
+ - Ta thấy chỉ trong 5s snort đã ghi nhận và báo động hơn 700 packet icmp. So với nếu ta ping thông thường từ 1 client thông thường
+   #+DOWNLOADED: screenshot @ 2020-12-04 13:31:43
+   [[file:_assets/2020-12-04_13-31-43_screenshot.png]]
 
-- Với 9s, gấp đôi thời gian snort chỉ ghi nhận 15 packet.
+ #+DOWNLOADED: screenshot @ 2020-12-04 13:31:54
+ [[file:_assets/2020-12-04_13-31-54_screenshot.png]]
 
-- Từ các kết quả trên, giả sử một attacker điều khiển hàng trăm, hàng nghìn máy zombie cùng tấn công thì hậu quả sẽ dẫn đến server bị mất hoàn toàn khả năng phản hồi.
+ - Với 9s, gấp đôi thời gian snort chỉ ghi nhận 15 packet.
+
+ - Từ các kết quả trên, giả sử một attacker điều khiển hàng trăm, hàng nghìn máy zombie cùng tấn công thì hậu quả sẽ dẫn đến server bị mất hoàn toàn khả năng phản hồi.
+
+**** IPtables:
+     #+begin_src fish
+              # tạo một chain mới
+                     iptables --new-chain RATE-LIMIT
+              # lọc icmp packet, áp lên extension conntrack, chỉ lọc những packet có state new, nhảy tới chain RATE-LIMIT
+                     iptables --append INPUT --protocol icmp --match conntrack --ctstate NEW --jump RATE-LIMIT
+              # dùng ext limit, cứ mỗi lần vưọt quá 10 connection 1s, sẽ trừ đi 1 token trong 5 token, và nếu hết 5 token các packet sau đó sẽ bị drop, ngược lại
+       # cứ mỗi giây không vượt quá limit, token sẽ được phục hồi 1 đơn vị, tối đa là 5. Nói dễ hiểu, nếu cố tình DOS và server nhận từ một địa chỉ IP hơn 50 packet/s, sau 5 giây ip đó sẽ
+#bị block cho tới khi trở về bình thường.
+                     iptables --append RATE-LIMIT --protocal icmp --match limit --limit 50/sec --limit-burst 5 --jump ACCEPT
+     #+end_src
+*** TCP SYN flood
 
 
-** TCP SYN flood
+ #+DOWNLOADED: screenshot @ 2020-12-04 22:31:07
+ [[file:_assets/2020-12-04_22-31-07_screenshot.png]]
 
-
-#+DOWNLOADED: screenshot @ 2020-12-04 22:31:07
-[[file:_assets/2020-12-04_22-31-07_screenshot.png]]
-
-- Trong mọi kết nối TCP (dù có kèm HTTP) hay không đều tuân theo 1 quy tắc
+ - Trong mọi kết nối TCP (dù có kèm HTTP) hay không đều tuân theo 1 quy tắc
   
-  - First, the client sends a SYN packet to the server in order to initiate the connection. Client gửi tcp với syn flag (ta gọi là tắt là syn paket) tới server. Mục đích của packet này là báo cho server biết máy khách muốn tạo lập 1 connection. Syn ở đây là synchronize
-  - The server then responds to that initial packet with a SYN/ACK packet, in order to acknowledge the communication. Server sẽ response bằng một tcp packet kèm 2 flag SYN/ACK. Ack ở đây là acknowledge. Để báo cho client biết rằng server sẽ chấp nhận kết nối nếu client tiếp tục. Đồng thời server sẽ bind một socket trên một cổng thuộc nhóm random (từ 49152 tới 65535)
-  - Finally, the client returns an ACK packet to acknowledge the receipt of the packet from the server. After completing this sequence of packet sending and receiving, the TCP connection is open and able to send and receive data. Sau cùng, client sẽ gửi tiếp một ack packet khác tới server. Client cũng sẽ cũng mở socket trong 1 cổng random (từ 49152 đến 65535) và thực hiện kết nối
-- Ngoài ra, nếu muốn kết thúc một kết nối TCP, client hoặc server sẽ gửi packet với flag FIN+ACK packet với phiá còn lại. Quá trình này gọi là termination conection, là một four-way handshake, giao thức 4 giai đoạn
-- Giao thức đợi tín hiệu phản hồi kèm flag ack này giúp cho tcp có tính ổn định và hạn chế tối đa việc mất dữ liệu (reliable) và nhờ đó những giao thức được xây dựng phiá trên nó (như HTTP,FTP) sẽ kế thừa tính này.
-- Nhưng cũng vì thế mà cá kỹ thuật tấn công lợi dụng giao thức này ra đời, ở đây, ngay khi server phản hổi client với ACK+SYN packet (ở bước 2), nó sẽ bắt đầu mở 1 socket 1 cổng dù chưa thực hiện kết nối. Ta gọi là half-connection, server sẽ đợi cho client trả lời bằng ACK packet. Nếu client cố tình không trả lời hoăc kéo dài thời gian trả lời. Cổng đang half-open đây sẽ trở nên hao phí. Từ đây nếu attacker cố tình gửi hàng loạt các packet SYN cùng một lúc. Sẽ dẫn đến việc nạn nhân mở hàng loạt các cổng và bị quá tải.
-- Lấy ví dụ minh họa bởi hping gửi duy nhất 1 SYN packet tới server
- [[file:_assets/2020-12-04_23-23-18_screenshot.png]]
+   - First, the client sends a SYN packet to the server in order to initiate the connection. Client gửi tcp với syn flag (ta gọi là tắt là syn paket) tới server. Mục đích của packet này là báo cho server biết máy khách muốn tạo lập 1 connection. Syn ở đây là synchronize
+   - The server then responds to that initial packet with a SYN/ACK packet, in order to acknowledge the communication. Server sẽ response bằng một tcp packet kèm 2 flag SYN/ACK. Ack ở đây là acknowledge. Để báo cho client biết rằng server sẽ chấp nhận kết nối nếu client tiếp tục. Đồng thời server sẽ bind một socket trên một cổng thuộc nhóm random (từ 49152 tới 65535)
+   - Finally, the client returns an ACK packet to acknowledge the receipt of the packet from the server. After completing this sequence of packet sending and receiving, the TCP connection is open and able to send and receive data. Sau cùng, client sẽ gửi tiếp một ack packet khác tới server. Client cũng sẽ cũng mở socket trong 1 cổng random (từ 49152 đến 65535) và thực hiện kết nối
+ - Ngoài ra, nếu muốn kết thúc một kết nối TCP, client hoặc server sẽ gửi packet với flag FIN+ACK packet với phiá còn lại. Quá trình này gọi là termination conection, là một four-way handshake, giao thức 4 giai đoạn
+ - Giao thức đợi tín hiệu phản hồi kèm flag ack này giúp cho tcp có tính ổn định và hạn chế tối đa việc mất dữ liệu (reliable) và nhờ đó những giao thức được xây dựng phiá trên nó (như HTTP,FTP) sẽ kế thừa tính này.
+ - Nhưng cũng vì thế mà cá kỹ thuật tấn công lợi dụng giao thức này ra đời, ở đây, ngay khi server phản hổi client với ACK+SYN packet (ở bước 2), nó sẽ bắt đầu mở 1 socket 1 cổng dù chưa thực hiện kết nối. Ta gọi là half-connection, server sẽ đợi cho client trả lời bằng ACK packet. Nếu client cố tình không trả lời hoăc kéo dài thời gian trả lời. Cổng đang half-open đây sẽ trở nên hao phí. Từ đây nếu attacker cố tình gửi hàng loạt các packet SYN cùng một lúc. Sẽ dẫn đến việc nạn nhân mở hàng loạt các cổng và bị quá tải.
+ - Lấy ví dụ minh họa bởi hping gửi duy nhất 1 SYN packet tới server
+  [[file:_assets/2020-12-04_23-23-18_screenshot.png]]
 
- - Và server sau khi đợi trả lời không thành công sẽ gửi về tiếp một packet với flag RST. RST là reset, là flag báo về từ server nếu kết 3-way handsake thất bại
-  [[file:_assets/2020-12-04_23-22-41_screenshot.png]]
+  - Và server sau khi đợi trả lời không thành công sẽ gửi về tiếp một packet với flag RST. RST là reset, là flag báo về từ server nếu kết 3-way handsake thất bại
+   [[file:_assets/2020-12-04_23-22-41_screenshot.png]]
 
-- Ta cũng thấy thời gian của một half-open rất ngắn, đo bằng ms. nhưng chỉ với hàng triệu tcp syn packet cùng được gửi. Đủ để làm quá tải bất kỳ hệ thống nào.
-
-
-#+begin_src shell
-hping -S -p 80 10.0.0.1 -i u100 --rand-source > /dev/null
-#+end_src
-Ta dùng câu lệnh trên ở cả 3 client blackarch cùng một lúc. Tốc độ gửi là 1000 packet/s. flag "-S" bảo hping gửi packet với syn flag. Nếu không hping mặc định sẽ gửi tcp packet không có flag nào cả và sẽ bị drop ngay lập tức.
-
-Và kết quả nhận đượng khi cố gắng gửi packet ICMP (ping) và TCP syn từ một client thường (với tốc độ 1 packet/s)
-
-#+DOWNLOADED: screenshot @ 2020-12-05 00:04:45
-[[file:_assets/2020-12-05_00-04-45_screenshot.png]]
-
-#+DOWNLOADED: screenshot @ 2020-12-05 00:05:11
-[[file:_assets/2020-12-05_00-05-11_screenshot.png]]
-
-- Và đây là khi ping nếu server không bị tấn công
-  #+DOWNLOADED: screenshot @ 2020-12-05 00:06:00
-  [[file:_assets/2020-12-05_00-06-00_screenshot.png]]
+ - Ta cũng thấy thời gian của một half-open rất ngắn, đo bằng ms. nhưng chỉ với hàng triệu tcp syn packet cùng được gửi. Đủ để làm quá tải bất kỳ hệ thống nào.
 
 
-- Từ phiá phòng thủ: centos ta dùng snort với rules
-  #+begin_example
-  alert tcp !$HOME_NET any -> $HOME_NET 80 (flags:S;msg:"alert!!!! Some script kiddy try to tcp syn flood your on port 80."; sid:1000002)
-  #+end_example
+ #+begin_src shell
+ hping -S -p 80 10.0.0.1 -i u100 --rand-source > /dev/null
+ #+end_src
+ Ta dùng câu lệnh trên ở cả 3 client blackarch cùng một lúc. Tốc độ gửi là 1000 packet/s. flag "-S" bảo hping gửi packet với syn flag. Nếu không hping mặc định sẽ gửi tcp packet không có flag nào cả và sẽ bị drop ngay lập tức.
 
-#+DOWNLOADED: screenshot @ 2020-12-05 00:22:37
-[[file:_assets/2020-12-05_00-22-37_screenshot.png]]
+ Và kết quả nhận đượng khi cố gắng gửi packet ICMP (ping) và TCP syn từ một client thường (với tốc độ 1 packet/s)
 
-#+DOWNLOADED: screenshot @ 2020-12-05 00:23:02
-[[file:_assets/2020-12-05_00-23-02_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-05 00:04:45
+ [[file:_assets/2020-12-05_00-04-45_screenshot.png]]
 
-- Cách phòng thủ:????
+ #+DOWNLOADED: screenshot @ 2020-12-05 00:05:11
+ [[file:_assets/2020-12-05_00-05-11_screenshot.png]]
 
-
-** Topo 2:
-   - Cài đặt snort ở gateway của network
-   - Sử dụng port mirroring
-   - Dùng dvwa - một web application hoàn chỉnh
-*** Application layer DOS - HTTP  slow-low attack:
+ - Và đây là khi ping nếu server không bị tấn công
+   #+DOWNLOADED: screenshot @ 2020-12-05 00:06:00
+   [[file:_assets/2020-12-05_00-06-00_screenshot.png]]
 
 
+ - Từ phiá phòng thủ: centos ta dùng snort với rules
+   #+begin_src snort
+   alert tcp !$HOME_NET any -> $HOME_NET 80 (flags:S;msg:"alert!!!! Some script kiddy try to tcp syn flood your on port 80."; flow: stateless; threshold: type threshold, track by dst,count 10,second 60 ;sid:1000002)
+   #+end_example
 
- #+DOWNLOADED: screenshot @ 2020-12-16 17:53:17
- [[file:_assets/2020-12-16_17-53-17_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-05 00:22:37
+ [[file:_assets/2020-12-05_00-22-37_screenshot.png]]
 
-*** Cài đặt RITE (port-mirror) trên router Server-area
+ #+DOWNLOADED: screenshot @ 2020-12-05 00:23:02
+ [[file:_assets/2020-12-05_00-23-02_screenshot.png]]
+
+**** Iptables:
+     #+begin_src fish
+       # tạo một chain mới
+       iptables --new-chain RATE-LIMIT
+       # lọc icmp packet, áp lên extension conntrack, chỉ lọc những packet có state new, nhảy tới chain RATE-LIMIT
+       iptables --append INPUT --protocol tcp --match conntrack --ctstate NEW --jump RATE-LIMIT
+       # dùng ext limit, cứ mỗi lần vưọt quá 50 connection 1s, sẽ trừ đi 1 token trong 5 token, và nếu hết 5 token các packet sau đó sẽ bị drop, ngược lại
+       # cứ mỗi giây không vượt quá limit, token sẽ được phục hồi 1 đơn vị, tối đa là 5. Ngắn gọn hơn, nếu cố tình DOS và server nhận từ một địa chỉ IP hơn 50 packet/s, sau 5 giây ip đó sẽ
+       #bị block cho tới khi trở về bình thường.
+       iptables --append RATE-LIMIT --protocal tcp --match limit --limit 50/sec --limit-burst 5 --jump ACCEPT
+     #+end_src
+
+
+
+* Topo 2:
+  - Cài đặt snort ở gateway của network
+  - Sử dụng port mirroring
+  - Dùng dvwa - một web application hoàn chỉnh
+
+
+#+DOWNLOADED: screenshot @ 2020-12-18 23:18:42
+[[file:_assets/2020-12-18_23-18-42_screenshot.png]]
+
+** Cài đặt RITE (port-mirror) trên router Server-area
     - RITE ( router IP traffic export) là một kỹ thuật port-mirroring  dùng để export (hay clone ) các packet đi qua một interface A tới 1 interface B trên cùng một router. Mà ứng dụng thực tế của nó là dùng để gửi một bản clone của các packet tới máy cài IDS, vì ta không thể cài IDS trực tiếp trên router mà chỉ có cài trên end-device.
     - Trong ví dụ này ta clone các packet gửi qua e0/0 (gateway của network 10.0.0.0/8) tới e0/1 (gw của 172.16.0.0/16) và dẫn nó tới int có MAC address là da83.e86b.80b5
 #+begin_src python
@@ -356,9 +429,9 @@ Và kết quả nhận đượng khi cố gắng gửi packet ICMP (ping) và TC
 
     - Kiểm tra xem port-mirroring có thàng công không
     - Trên router
+
  #+DOWNLOADED: screenshot @ 2020-12-16 18:45:42
  [[file:_assets/2020-12-16_18-45-42_screenshot.png]]
-
     - Ta ping từ 1 client bất kỳ không phải network 10.0.0.0/8(chứa server) và từ network 172.16.0.0/16 (chứa snort-server) --> 10.0.0.10
 
  #+DOWNLOADED: screenshot @ 2020-12-16 18:47:18
@@ -374,6 +447,7 @@ Và kết quả nhận đượng khi cố gắng gửi packet ICMP (ping) và TC
    - Dùng được với nhiều network khác nhau, ta có thể port-mirroing từ nhiều network khác nhau tới cùng một máy chưa IDS. Thay vì phải cài snort trên từng máy. Cũng như khả năng chỉ trích 1 phần nhỏ packet để clone gửi tới IDS giúp giảm sức chịu đựng của hệ thống IDS
 - Cũng như TCP là một giao thức được xây dựng như một lớp abstraction phiá trên IP, HTTP là một giao thức được xây dựng ngay trên nền tảng của các giao thức thuộc các layer phiá dướt của OSI model. HTTP là hypertext transfer protocol, dùng để vận chuyển các dữ liệu dưới dạng nhìn thấy được bởi người dùng thông thường trong môi trường internet. HTTP có thể được xây trên nền TCP hoặc UDP, thuờng là TCP để thừa kế tính đảm bảo của nó. HTTP kết hợp với giao thức bảo mật SSL ta gọi là HTTPS.
 
+** Application layer DOS - HTTP  attack:
   - Ta chạy một apache server trên centos và truy cập cổng 80 từ client với w3m:
     #+begin_src shell
     root@centos-server /e/httpd# httpd
@@ -407,239 +481,240 @@ Và kết quả nhận đượng khi cố gắng gửi packet ICMP (ping) và TC
 
 *** Tấn công HTTP - Slow and Low DOS vào Snort: 
 
-    - Kiểm tra xem server có hoạt động bình thường không.
-    - Dùng một máy ảo với firefox  để kiểm tra
-      #+DOWNLOADED: screenshot @ 2020-12-16 19:01:45
-      [[file:_assets/2020-12-16_19-01-45_screenshot.png]]
+     - Kiểm tra xem server có hoạt động bình thường không.
+     - Dùng một máy ảo với firefox  để kiểm tra
+       #+DOWNLOADED: screenshot @ 2020-12-16 19:01:45
+       [[file:_assets/2020-12-16_19-01-45_screenshot.png]]
 
-      [[file:_assets/2020-12-16_23-48-40_screenshot.png]]
-- Tiếp theo ta set up snort với rule như sau trên centos server
-- Đây là snort rules ta dùng để phát hiện http request tới cổng 80    
-#+begin_src shell
-alert tcp !$HOME_NET any -> $HOME_NET 80 (msg:"Those kids attack by http!!!";content:"HTTP"; sid: 1000003; rev:1)
-#+end_src
-- Dùng câu lệnh để chạy snort:
-#+begin_src shell
-centos-server #  snort -A console -c /etc/snort/snort.conf
-#+end_src
-- Tiếp theo ta dùng slowloris.py (slowloris có 2 phiên bản viết bằng perl và python) với câu lệnh như sau trên cả 3 máy attacker. 
-#+begin_src cperl
-root@blackarch-2 /# slowloris-py -p 80  --sleeptime 10 10.0.0.1
-root@blackarch-3 /# slowloris-py -p 80  --sleeptime 10 10.0.0.1
-root@blackarch-1 /# slowloris-py -p 80  --sleeptime 10 10.0.0.1
-#+end_src
-- Ta thấy slowloris sẽ tạo ra các kết nối trên các socket khác nhay và cố gắng duy trì các kết nối này càng lâu càng tốt với keep-alive header
+       [[file:_assets/2020-12-16_23-48-40_screenshot.png]]
+ - Tiếp theo ta set up snort với rule như sau trên centos server
+ - Đây là snort rules ta dùng để phát hiện http request tới cổng 80    
+ #+begin_src snort
+ alert tcp !$HOME_NET any -> $HOME_NET 80 (msg:"Those kids attack by http!!!";content:"HTTP"; threshold: type threshold, track by_dst , count 100, seconds 1; sid: 1000003; rev:1)
+ #+end_src
+ - Dùng câu lệnh để chạy snort:
+ #+begin_src shell
+ centos-server #  snort -A console -c /etc/snort/snort.conf
+ #+end_src
+ - Tiếp theo ta dùng slowloris.py (slowloris có 2 phiên bản viết bằng perl và python) với câu lệnh như sau trên cả 3 máy attacker. 
+ #+begin_src cperl
+ root@blackarch-2 /# slowloris-py -p 80  --sleeptime 10 10.0.0.1
+ root@blackarch-3 /# slowloris-py -p 80  --sleeptime 10 10.0.0.1
+ root@blackarch-1 /# slowloris-py -p 80  --sleeptime 10 10.0.0.1
+ #+end_src
+ - Ta thấy slowloris sẽ tạo ra các kết nối trên các socket khác nhay và cố gắng duy trì các kết nối này càng lâu càng tốt với keep-alive header
 
-#+DOWNLOADED: screenshot @ 2020-12-08 11:35:46
-[[file:_assets/2020-12-08_11-35-46_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-08 11:35:46
+ [[file:_assets/2020-12-08_11-35-46_screenshot.png]]
 
-- Và trên snort ngay lập tức báo lại như sau
-#+DOWNLOADED: screenshot @ 2020-12-08 11:35:59
-[[file:_assets/2020-12-08_11-35-59_screenshot.png]]
-
-
-- Kiểm tra bằng 1 client bất kỳ truy cập tới web-server nạn nhân. Tha thấy kết nối bị trì hoãn cực kỳ
-#+DOWNLOADED: screenshot @ 2020-12-08 11:44:15
-[[file:_assets/2020-12-08_11-44-15_screenshot.png]]
-
-#+DOWNLOADED: screenshot @ 2020-12-08 11:44:38
-[[file:_assets/2020-12-08_11-44-38_screenshot.png]]
-
-#+DOWNLOADED: screenshot @ 2020-12-08 11:45:44
-[[file:_assets/2020-12-08_11-45-44_screenshot.png]]
+ - Và trên snort ngay lập tức báo lại như sau
+ #+DOWNLOADED: screenshot @ 2020-12-08 11:35:59
+ [[file:_assets/2020-12-08_11-35-59_screenshot.png]]
 
 
-#+begin_comment
-Advanture attack -> write script that auto attack with http request. USe burpsuite or wireshark to capture
-#+end_comment
+ - Kiểm tra bằng 1 client bất kỳ truy cập tới web-server nạn nhân. Tha thấy kết nối bị trì hoãn cực kỳ
+ #+DOWNLOADED: screenshot @ 2020-12-08 11:44:15
+ [[file:_assets/2020-12-08_11-44-15_screenshot.png]]
 
-#+begin_comment
+ #+DOWNLOADED: screenshot @ 2020-12-08 11:44:38
+ [[file:_assets/2020-12-08_11-44-38_screenshot.png]]
+
+ #+DOWNLOADED: screenshot @ 2020-12-08 11:45:44
+ [[file:_assets/2020-12-08_11-45-44_screenshot.png]]
+
+
+ #+begin_comment
+ Advanture attack -> write script that auto attack with http request. USe burpsuite or wireshark to capture
+ #+end_comment
+
+ #+begin_comment
 **** Non-dos                                                       :noexport:
  - NTP amplication dos attack
  - UDP-DNS flood attack
  - DNS amplication attack
  #+end_comment
 
-** HTTP flood:
+*** HTTP flood - volumn attack:
 
-    - Trái ngược với kiểu slow-low, ta gửi thật nhiều http connection càng tốt tới nạn nhân, dù phần lớn sẽ nhanh chóng bị bỏ drop.
-    - Thay đổi trên dòng lệnh ~hulk~.
+     - Trái ngược với kiểu slow-low, ta gửi thật nhiều http connection càng tốt tới nạn nhân, dù phần lớn sẽ nhanh chóng bị bỏ drop.
+     - Thay đổi trên dòng lệnh ~hulk~.
 
- #+begin_src shell
-hulk http://10.0.0.1
+  #+begin_src shell
+ hulk http://10.0.0.1
+  #+end_src
+
+ #+DOWNLOADED: screenshot @ 2020-12-17 21:17:03
+ [[file:_assets/2020-12-17_21-17-03_screenshot.png]]
+
+  - Capture bằng wireshark
+  - Ta thấy từ từ ~21:15:08~ tới ~21:15:09~ tức 1s ~hulk~ đã gửi hơn 600 http connection. Chỉ trên 1 máy 
+
+
+ #+DOWNLOADED: screenshot @ 2020-12-17 21:18:16
+ [[file:_assets/2020-12-17_21-18-16_screenshot.png]]
+
+ #+DOWNLOADED: screenshot @ 2020-12-17 21:18:26
+ [[file:_assets/2020-12-17_21-18-26_screenshot.png]]
+ - Dùng Snort
+
+   #+DOWNLOADED: screenshot @ 2020-12-17 21:21:37
+   [[file:_assets/2020-12-17_21-21-37_screenshot.png]]
+
+ #+DOWNLOADED: screenshot @ 2020-12-17 21:22:23
+ [[file:_assets/2020-12-17_21-22-23_screenshot.png]]
+ - Ta thấy số packet nhận về thấp hơn rất nhiều. Điều đó hoàn toàn hợp lý vì port mirroring ta chỉ trích 1 phần nhỏ gửi tới snort. Nhờ đó giảm tải cho hệ thống IDS rất nhiều, nhất là khi phải theo dõi nhiều mạng lưới khác nhau.
+
+
+**** Ping of Death                                                 :noexport:
+  - Dùng ping mặt định, length của mỗi ICMP packet là 42
+ #+begin_src python
+ ping   10.0.0.1     
+ #+end_src
+ Ngoài ra, mỗi ping gửi đi sẽ có 1 ping quay về
+
+ #+DOWNLOADED: screenshot @ 2020-12-17 21:44:12
+ [[file:_assets/2020-12-17_21-44-12_screenshot.png]]
+
+ #+DOWNLOADED: screenshot @ 2020-12-17 21:36:57
+ [[file:_assets/2020-12-17_21-36-57_screenshot.png]]
+
+  - Dùng hping với flag "-s"  là 1000. Ta thấy packet length thay đổi 
+  - Mỗi ping gửi đi cũng sẽ có 1 ping response tương ứng
+    #+begin_src shell
+    ping -s 1000 10.0.0.1
+    #+end_src
+
+ #+DOWNLOADED: screenshot @ 2020-12-17 21:45:21
+ [[file:_assets/2020-12-17_21-45-21_screenshot.png]]
+
+ #+DOWNLOADED: screenshot @ 2020-12-17 21:38:34
+ [[file:_assets/2020-12-17_21-38-34_screenshot.png]]
+  - Vậy nếu ta đặt data length với con số 100000 thì sao
+ #+begin_src python
+ ping -d 60000 -1 10.0.0.1 -i u100
  #+end_src
 
-#+DOWNLOADED: screenshot @ 2020-12-17 21:17:03
-[[file:_assets/2020-12-17_21-17-03_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-17 21:40:58
+ [[file:_assets/2020-12-17_21-40-58_screenshot.png]]
 
- - Capture bằng wireshark
- - Ta thấy từ từ ~21:15:08~ tới ~21:15:09~ tức 1s ~hulk~ đã gửi hơn 600 http connection. Chỉ trên 1 máy 
+ #+DOWNLOADED: screenshot @ 2020-12-17 21:45:44
+ [[file:_assets/2020-12-17_21-45-44_screenshot.png]]
+  - Chúng ta thấy xuât hiện cột  ~Reassembled IPv4 length~ , có sự phản hồi từ máy nhận (trên wireshark), nhưng trên command line của ping không hề xuất hiện. Cho thấy đây là một hành vi không bình thường. Thật vậy, Ping of Death (PoD) là lợi dụng sự giới hạn trong MTU (maximum transmision unit) trong mỗi PDU ( protocol data unit). PDU là chỉ mỗi đơn vị trao đổi trong hệ thống OSI. Mỗi layer khác nhau dùng một PDU khác nhau
+    - Layer 4 dùng segment hay datagram
+    - Layer 3 dùng packet
+    - Layer 2 dùng frame
+    - Layer 1 dùng bit
+  - Đôi khi, trong ngữ cảnh thông thường. Ta hay dùng cụm từ packet để chỉ mọi đơn vị trao đổi trong network, như một cách thuận tiện trong giao tiếp, dù chúng không chuẩn về mặt lý thuyết.
+  - Quay lại vấn đề chính, mỗi ICMP packet được trao đổi với nhau rất đa dạng về kích thướng, thông thường rất nhỏ như là 42 byte khi ping thông thường và có thể lên tới tối đa ~ 64000 byte. Tuy nhiên, ở lớp thất hơn, layer2 , mỗi PDU là frame chỉ giới hạn tối đa 1500 byte
 
+    #+DOWNLOADED: screenshot @ 2020-12-17 22:02:40
+    [[file:_assets/2020-12-17_22-02-40_screenshot.png]]
 
-#+DOWNLOADED: screenshot @ 2020-12-17 21:18:16
-[[file:_assets/2020-12-17_21-18-16_screenshot.png]]
+    - Điều này dẫn đến khái niệm, fragment packet. Nghĩa là mỗi gói tin ICMP nếu có kích thước lớn phải được chia nhỏ ra rồi gửi đi, đồng thời khi tới mục tiêu nó sẽ được nối lại .
 
-#+DOWNLOADED: screenshot @ 2020-12-17 21:18:26
-[[file:_assets/2020-12-17_21-18-26_screenshot.png]]
-- Dùng Snort
+    - Vấn đề là nhiều máy tính không được thiết kế để xử lý tình huống nếu gói tin được nói lại lớn hơn kích thước maximum (64KB). Dẫn đế việc nếu kẻ tấn công cố tình gửi hàng loạt các packet có kích thước cực lớn, sẽ gây ra cạn kiệt tài nguyên trên máy nhận.
 
-  #+DOWNLOADED: screenshot @ 2020-12-17 21:21:37
-  [[file:_assets/2020-12-17_21-21-37_screenshot.png]]
+    - Ta thấy mặt định ping không cho phép gửi gói tin lớn hơn kích thuớc 64KB
+      #+DOWNLOADED: screenshot @ 2020-12-17 22:08:22
+      [[file:_assets/2020-12-17_22-08-22_screenshot.png]]
 
-#+DOWNLOADED: screenshot @ 2020-12-17 21:22:23
-[[file:_assets/2020-12-17_21-22-23_screenshot.png]]
-- Ta thấy số packet nhận về thấp hơn rất nhiều. Điều đó hoàn toàn hợp lý vì port mirroring ta chỉ trích 1 phần nhỏ gửi tới snort. Nhờ đó giảm tải cho hệ thống IDS rất nhiều, nhất là khi phải theo dõi nhiều mạng lưới khác nhau.
+      - Vậy nên ta dùng hping, với interval u1000, nghĩa là gửi 100 packet với kích thước 200KB mỗi packet tới nạn nhân
 
-
-*** Ping of Death                                                  :noexport:
- - Dùng ping mặt định, length của mỗi ICMP packet là 42
-#+begin_src python
-ping   10.0.0.1     
-#+end_src
-Ngoài ra, mỗi ping gửi đi sẽ có 1 ping quay về
-
-#+DOWNLOADED: screenshot @ 2020-12-17 21:44:12
-[[file:_assets/2020-12-17_21-44-12_screenshot.png]]
-
-#+DOWNLOADED: screenshot @ 2020-12-17 21:36:57
-[[file:_assets/2020-12-17_21-36-57_screenshot.png]]
-
- - Dùng hping với flag "-s"  là 1000. Ta thấy packet length thay đổi 
- - Mỗi ping gửi đi cũng sẽ có 1 ping response tương ứng
-   #+begin_src shell
-   ping -s 1000 10.0.0.1
-   #+end_src
-
-#+DOWNLOADED: screenshot @ 2020-12-17 21:45:21
-[[file:_assets/2020-12-17_21-45-21_screenshot.png]]
-
-#+DOWNLOADED: screenshot @ 2020-12-17 21:38:34
-[[file:_assets/2020-12-17_21-38-34_screenshot.png]]
- - Vậy nếu ta đặt data length với con số 100000 thì sao
-#+begin_src python
-ping -d 60000 -1 10.0.0.1 -i u100
-#+end_src
-
-#+DOWNLOADED: screenshot @ 2020-12-17 21:40:58
-[[file:_assets/2020-12-17_21-40-58_screenshot.png]]
-
-#+DOWNLOADED: screenshot @ 2020-12-17 21:45:44
-[[file:_assets/2020-12-17_21-45-44_screenshot.png]]
- - Chúng ta thấy xuât hiện cột  ~Reassembled IPv4 length~ , có sự phản hồi từ máy nhận (trên wireshark), nhưng trên command line của ping không hề xuất hiện. Cho thấy đây là một hành vi không bình thường. Thật vậy, Ping of Death (PoD) là lợi dụng sự giới hạn trong MTU (maximum transmision unit) trong mỗi PDU ( protocol data unit). PDU là chỉ mỗi đơn vị trao đổi trong hệ thống OSI. Mỗi layer khác nhau dùng một PDU khác nhau
-   - Layer 4 dùng segment hay datagram
-   - Layer 3 dùng packet
-   - Layer 2 dùng frame
-   - Layer 1 dùng bit
- - Đôi khi, trong ngữ cảnh thông thường. Ta hay dùng cụm từ packet để chỉ mọi đơn vị trao đổi trong network, như một cách thuận tiện trong giao tiếp, dù chúng không chuẩn về mặt lý thuyết.
- - Quay lại vấn đề chính, mỗi ICMP packet được trao đổi với nhau rất đa dạng về kích thướng, thông thường rất nhỏ như là 42 byte khi ping thông thường và có thể lên tới tối đa ~ 64000 byte. Tuy nhiên, ở lớp thất hơn, layer2 , mỗi PDU là frame chỉ giới hạn tối đa 1500 byte
-
-   #+DOWNLOADED: screenshot @ 2020-12-17 22:02:40
-   [[file:_assets/2020-12-17_22-02-40_screenshot.png]]
-
-   - Điều này dẫn đến khái niệm, fragment packet. Nghĩa là mỗi gói tin ICMP nếu có kích thước lớn phải được chia nhỏ ra rồi gửi đi, đồng thời khi tới mục tiêu nó sẽ được nối lại .
-
-   - Vấn đề là nhiều máy tính không được thiết kế để xử lý tình huống nếu gói tin được nói lại lớn hơn kích thước maximum (64KB). Dẫn đế việc nếu kẻ tấn công cố tình gửi hàng loạt các packet có kích thước cực lớn, sẽ gây ra cạn kiệt tài nguyên trên máy nhận.
-
-   - Ta thấy mặt định ping không cho phép gửi gói tin lớn hơn kích thuớc 64KB
-     #+DOWNLOADED: screenshot @ 2020-12-17 22:08:22
-     [[file:_assets/2020-12-17_22-08-22_screenshot.png]]
-
-     - Vậy nên ta dùng hping, với interval u1000, nghĩa là gửi 100 packet với kích thước 200KB mỗi packet tới nạn nhân
-
-#+begin_src shell
-hping -d 200000 -i u1000 -1 10.0.0.1
-#+end_src
+ #+begin_src shell
+ hping -d 200000 -i u1000 -1 10.0.0.1
+ #+end_src
 
 
 ** Non-Dos Attack :
 
 *** SQL injection
-    - Dùng nmap, ta biết server đang sử dụng mysql data
+ - Dùng nmap, ta biết server đang sử dụng mysql data
 
-#+DOWNLOADED: screenshot @ 2020-12-18 20:49:16
-[[file:_assets/2020-12-18_20-49-16_screenshot.png]]
-    - Sau đó ta kiểm tra tiếp bằng cách nhập một input bất kỳ bắt đầu bằng ~'~ , output từ webserver sẽ làm lộ việc dùng sql cũng như có thể nhập sql vào
-      #+DOWNLOADED: screenshot @ 2020-12-18 20:52:12
-      [[file:_assets/2020-12-18_20-52-12_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-18 20:49:16
+ [[file:_assets/2020-12-18_20-49-16_screenshot.png]]
+     - Sau đó ta kiểm tra tiếp bằng cách nhập một input bất kỳ bắt đầu bằng ~'~ , output từ webserver sẽ làm lộ việc dùng sql cũng như có thể nhập sql vào
+       #+DOWNLOADED: screenshot @ 2020-12-18 20:52:12
+ [[file:_assets/2020-12-18_20-52-12_screenshot.png]]
 
-      - Vậy ta thử exploit bằng tay.
+       - Vậy ta thử exploit bằng tay.
 
-#+DOWNLOADED: screenshot @ 2020-12-18 20:17:25
-[[file:_assets/2020-12-18_20-17-25_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-18 20:17:25
+ [[file:_assets/2020-12-18_20-17-25_screenshot.png]]
 
-#+DOWNLOADED: screenshot @ 2020-12-18 20:17:04
-[[file:_assets/2020-12-18_20-17-04_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-18 20:17:04
+ [[file:_assets/2020-12-18_20-17-04_screenshot.png]]
 
-#+begin_src sql
-‘ union all select load_file(‘/etc/passwd’),null #
-#+end_src
-#+DOWNLOADED: screenshot @ 2020-12-18 20:47:45
-[[file:_assets/2020-12-18_20-47-45_screenshot.png]]
+ #+begin_src sql
+ ‘ union all select load_file(‘/etc/passwd’),null #
+ #+end_src
+ #+DOWNLOADED: screenshot @ 2020-12-18 20:47:45
+ [[file:_assets/2020-12-18_20-47-45_screenshot.png]]
 
 
- - Với một payload đơn giản đã để lộ rất nhiều data. Nguyên nhân của lỗi này nằm ngay trong source code
-#+begin_src php
-  <?php
+  - Với một payload đơn giản đã để lộ rất nhiều data. Nguyên nhân của lỗi này nằm ngay trong source code
+ #+begin_src php
+   <?php
 
-  if( isset( $_REQUEST[ 'Submit' ] ) ) {
-          // Get input
+   if( isset( $_REQUEST[ 'Submit' ] ) ) {
+           // Get input
 
-          $id = $_REQUEST[ 'id' ];
-        // Attacker chỉ cần có kiến thức về sql và php, bất kỳ dòng code sql nào sẽ được inject trực tiếp vào $query và thực thi.
-          // Check database
-          $query  = "SELECT first_name, last_name FROM users WHERE user_id = '$id''
-  ;";
-        // $query  = "SELECT first_name, last_name FROM users WHERE user_id = '$id' LIMIT 1;"; Thêm LIMIT 1 vào cuối dòng này là một trong những cách ngăn chặn hữu hiệu nhất trong trường hợp này
-          $result = mysqli_query($GLOBALS["___mysqli_ston"],  $query ) or die( '<pre>' . ((is_object($GLOBALS["___mysqli_ston"])) (cond) ? then : else; mysq
-  li_error($GLOBALS["___mysqli_ston"]) : (($___mysqli_res = mysqli_connect_error()) ? $___mysqli_res : false)) . '</pre>' );
+           $id = $_REQUEST[ 'id' ];
+         // Attacker chỉ cần có kiến thức về sql và php, bất kỳ dòng code sql nào sẽ được inject trực tiếp vào $query và thực thi.
+           // Check database
+           $query  = "SELECT first_name, last_name FROM users WHERE user_id = '$id''
+   ;";
+         // $query  = "SELECT first_name, last_name FROM users WHERE user_id = '$id' LIMIT 1;"; Thêm LIMIT 1 vào cuối dòng này là một trong những cách ngăn chặn hữu hiệu nhất trong trường hợp này
+           $result = mysqli_query($GLOBALS["___mysqli_ston"],  $query ) or die( '<pre>' . ((is_object($GLOBALS["___mysqli_ston"])) (cond) ? then : else; mysq
+   li_error($GLOBALS["___mysqli_ston"]) : (($___mysqli_res = mysqli_connect_error()) ? $___mysqli_res : false)) . '</pre>' );
+  #+end_src
+
+  - Phần trên chỉ để hiểu cách mà sqli hoặt động (một cách cơ bản), tuy nhiên trong nội dung của bài tiểu luận này, vốn tập trung vào snort nói riêng và IDS nói chung, ta tìm hiểu về cách khai thác lỗi sqli một cách tự động và dùng snort để phát hiện và ngăn chặn nó.
+  - Ở đây ta dùng ~SQLmap~ kết hợp với ~Zap proxy~.
+    - Zap proxy cho phép ta capture các http request ta gửi tới server nạn nhân
+    - Với input ~1~
+
+ #+DOWNLOADED: screenshot @ 2020-12-18 20:58:58
+ [[file:_assets/2020-12-18_20-58-58_screenshot.png]]
+
+      #+DOWNLOADED: screenshot @ 2020-12-18 20:58:42
+ [[file:_assets/2020-12-18_20-58-42_screenshot.png]]
+
+ - Dùng thông tin capture được ta bỏ vào sqlmap
+ - Trên máy ~root@kali~ ta dùng sql map:
+ - 
+ #+begin_src shell
+ sqlmap --url="http://10.0.0.1/vulnerabilities/sqli/?id=1&Submit=Submit" --cookie="PHPSESSID=ejrjp5450f9bagliolqtrrgtv6; security=low" --dump
  #+end_src
 
- - Phần trên chỉ để hiểu cách mà sqli hoặt động (một cách cơ bản), tuy nhiên trong nội dung của bài tiểu luận này, vốn tập trung vào snort nói riêng và IDS nói chung, ta tìm hiểu về cách khai thác lỗi sqli một cách tự động và dùng snort để phát hiện và ngăn chặn nó.
- - Ở đây ta dùng ~SQLmap~ kết hợp với ~Zap proxy~.
-   - Zap proxy cho phép ta capture các http request ta gửi tới server nạn nhân
-   - Với input ~1~
+ #+DOWNLOADED: screenshot @ 2020-12-18 21:12:27
+ [[file:_assets/2020-12-18_21-12-27_screenshot.png]]
 
-#+DOWNLOADED: screenshot @ 2020-12-18 20:58:58
-[[file:_assets/2020-12-18_20-58-58_screenshot.png]]
+ - Cách tấn công này nhìn có vẻ đơn giản và dễ dàng, nhưng thực tế chỉ cần kiểm tra bằng wireshark, ta thấy sqlmap đã gửi hàng chục ngìn tcp packet/http request để thử các trường hợp khác nhau. Dễ thấy đây là một kiểu tấn công bruteforce
+   - 
+   #+DOWNLOADED: screenshot @ 2020-12-18 21:14:11
+   [[file:_assets/2020-12-18_21-14-11_screenshot.png]]
 
-     #+DOWNLOADED: screenshot @ 2020-12-18 20:58:42
-     [[file:_assets/2020-12-18_20-58-42_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-18 21:14:26
+ [[file:_assets/2020-12-18_21-14-26_screenshot.png]]
 
-- Dùng thông tin capture được ta bỏ vào sqlmap
-- Trên máy ~root@kali~ ta dùng sql map:
-- 
-#+begin_src shell
-sqlmap --url="http://10.0.0.1/vulnerabilities/sqli/?id=1&Submit=Submit" --cookie="PHPSESSID=ejrjp5450f9bagliolqtrrgtv6; security=low" --dump
-#+end_src
+ - Và dĩ nhiên, việc bruteforce một cách "ồn ào" như vậy sẽ dễ dàng bị phát hiện bằng IDS như snort
+   #+begin_src snort
+   alert tcp !$HOME_NET any -> $HOME_NET 80 (msg:"SQL injection attemp from script kiddies"; content:"/vulnerabilities/sqli/?id="; pcre:"/\/sqli\/?id=[0-9]{1-5}\sHTTP.*/i"; sid:100005;rev:1)
+   #+end_src
+   - Lý giải: so sánh sự khác biệt giữa một request bình thường và một request với sqlmap:
+     #+begin_src shell
+ vulnerabilities/sqli/?id=1&Submit=Submit 
+     /vulnerabilities/sqli/?id=1%27%20AND%201297%3D1297%20AND%20%27gsCv%27%3D%27gsCv&Submit=Submit
+     #+end_src
+ Do đó ta dùng pcre
+ - ~pcre~ là lọc dựa trên perl regrex, trừ những request với id={number}&Submit=Submit ra tất cả các hình thức khác sẽ bị báo động, dĩ nhiên là phải gửi tới địa chỉ /vulnerabilities/sqli/?id= , dấu ~!~ dùng ngay đằng trước regrex nghĩa là loại ngược lại. 
 
-#+DOWNLOADED: screenshot @ 2020-12-18 21:12:27
-[[file:_assets/2020-12-18_21-12-27_screenshot.png]]
-
-- Cách tấn công này nhìn có vẻ đơn giản và dễ dàng, nhưng thực tế chỉ cần kiểm tra bằng wireshark, ta thấy sqlmap đã gửi hàng chục ngìn tcp packet/http request để thử các trường hợp khác nhau. Dễ thấy đây là một kiểu tấn công bruteforce
-  - 
-  #+DOWNLOADED: screenshot @ 2020-12-18 21:14:11
-  [[file:_assets/2020-12-18_21-14-11_screenshot.png]]
-
-#+DOWNLOADED: screenshot @ 2020-12-18 21:14:26
-[[file:_assets/2020-12-18_21-14-26_screenshot.png]]
-
-- Và dĩ nhiên, việc bruteforce một cách "ồn ào" như vậy sẽ dễ dàng bị phát hiện bằng IDS như snort
-  #+begin_src snort
-  alert tcp !$HOME_NET any -> $HOME_NET 80 (msg:"SQL injection attemp from script kiddies"; content:"/vulnerabilities/sqli/?id="; pcre:"/\/sqli\/?id=[0-9]{1-5}\sHTTP.*/i"; sid:100005;rev:1)
-  #+end_src
-  - Lý giải: so sánh sự khác biệt giữa một request bình thường và một request với sqlmap:
-    #+begin_src shell
-    vulnerabilities/sqli/?id=1&Submit=Submit 
-    /vulnerabilities/sqli/?id=1%27%20AND%201297%3D1297%20AND%20%27gsCv%27%3D%27gsCv&Submit=Submit
-    #+end_src
-    Do đó ta dùng pcre
-- ~pcre~ là lọc dựa trên perl regrex, trừ những request với id={number}&Submit=Submit ra tất cả các hình thức khác sẽ bị báo động, dĩ nhiên là phải gửi tới địa chỉ /vulnerabilities/sqli/?id= , dấu ~!~ dùng ngay đằng trước regrex nghĩa là loại ngược lại. 
-
-  #+DOWNLOADED: screenshot @ 2020-12-18 22:14:14
-  [[file:_assets/2020-12-18_22-14-14_screenshot.png]]
-- Ta check lại với các request thông thường, input kiểu thông thường vào
-  #+DOWNLOADED: screenshot @ 2020-12-18 22:34:19
-  [[file:_assets/2020-12-18_22-34-19_screenshot.png]]
-- Và snort không báo động gì cả
-  #+DOWNLOADED: screenshot @ 2020-12-18 22:34:43
-  [[file:_assets/2020-12-18_22-34-43_screenshot.png]]
+   #+DOWNLOADED: screenshot @ 2020-12-18 22:14:14
+ [[file:_assets/2020-12-18_22-14-14_screenshot.png]]
+ - Ta check lại với các request thông thường, input kiểu thông thường vào
+   #+DOWNLOADED: screenshot @ 2020-12-18 22:34:19
+ [[file:_assets/2020-12-18_22-34-19_screenshot.png]]
+ - Và snort không báo động gì cả
+   #+DOWNLOADED: screenshot @ 2020-12-18 22:34:43
+ [[file:_assets/2020-12-18_22-34-43_screenshot.png]]
+     
