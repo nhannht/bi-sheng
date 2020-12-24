@@ -164,8 +164,89 @@ iptables -S INPUT
         # Chặn packet từ 1 ip nguồn, -s là source ip
         iptables -A INPUT -s 192.168.252.10 -j DROP
       #+end_src
+*** Về Mod-security:
+#+begin_comment
+Understanding ModSecurity
+ModSecurity is a hybrid web application firewall that relies on the host web server for some of the work. The only supported web server at the moment is Apache 2.x, but it is possible, in principle, to integrate ModSecurity with any other web server that provides sufficient
+integration APIs.
+Apache does for ModSecurity what it does for all other modules—it handles the infrastruc- ture tasks:
+1. Decrypts SSL
+2. Breaks up the inbound connection stream into HTTP requests
+3. Partially parses HTTP requests
+#+end_comment
+- ModSecurity là một hydrid web-application firewall phụ thuộc vào host là máy chủ mà nó bảo vệ để cùng hoạt động. Nó chỉ support Apache, tuy nhiên có hỗ trợ API để kết hợp với các web khác
+#+begin_comment
+Understanding ModSecurity
+Apache does for ModSecurity what it does for all other modules—it handles the infrastruc- ture tasks:
+1. Decrypts SSL
+2. Breaks up the inbound connection stream into HTTP requests
+3. Partially parses HTTP requests
+Request line and headers are NUL-terminated
+This is normally not a problem, because what Apache doesn’t see cannot harm any module or application. In some very rare cases, however, the purpose of the NUL- byte evasion is to hide things and this Apache behavior only helps with the hiding. Request header transformation Apache will canonicalize request headers, combining multiple headers that use the same name and collapsing those that span two or more lines. The transformation may make it difficult to detect subtle signs of evasion, but in practice this hasn’t been a problem yet.
+#+end_comment
+- Nó phải phụ thuộc vào Apache để phân giải SSL, HTTP request nên gọi là hydrid firewall
+#+begin_comment
+Quick request handling Apache will handle some requests quickly, leaving ModSecurity unable to do any- thing but notice them in the logging phase. Invalid HTTP requests, in particular, will be rejected by Apache without ModSecurity having a say. No access to some response headers Because of the way Apache works, the Server and Date response headers are invisible to ModSecurity; they cannot be inspected or logged.
+#+end_comment
+- 4 chức năng chính của modsec:
+  - Parsing: phân tích các gói data để áp rules lên
+  - buffering: nghĩa là gói các request và response lại nhằm đảm bảo sự hoàn chính của mỗi request/response khi phân tích. Dĩ nhiên sẽ làm tốn RAM hơn
+  - Logging: Log full transaction
+  - Rule Engine: cung cấp hệ thống rules hoàn chỉnh và áp đặt rule đó lên mỗi transaction
+    
+#+begin_comment
+What Rules Look Like
+Everything in ModSecurity revolves around two things: configuration and rules. The configuration tells ModSecurity how to process the data it sees; the rules decide what to do with the processed data. Although it is too early to go into how the rules work, I will show you a quick example here just to give you an idea what they look like.
+For example:
+SecRule ARGS "<script>" log,deny,status:404
+Even without further assistance, you can probably recognize the part in the rule that specifies what we wish to look for in input data (<script>). Similarly, you will easily figure out what will happen if we do find the desired pattern (log,deny,status:404). Things will become more clear if I tell you about the general rule syntax, which is the following:
+SecRule VARIABLES OPERATOR ACTIONS
+The three parts have the following meanings:
+1. The VARIABLES part tells ModSecurity where to look. The ARGS variable, used in the
+example, means all request parameters.
+2. The OPERATOR part tells ModSecurity how to look. In the example, we have a regular
+expression pattern, which will be matched against ARGS.
+3. The ACTIONS part tells ModSecurity what to do on a match. The rule in the example gives three instructions: log problem, deny transaction and use the status 404 for the denial (status:404).
+I hope you are not dissapointed with the simplicity of this first rule. I promise you that by combining the various facilities offered by ModSecurity, you will be able to write very useful rules that implement complex logic where necessary.
+#+end_comment
+- Rules và transaction: ở modsec có khái niệm transaction, chỉ một giai đoạn hoàn chỉnh từ lúc request đi qua firewall vào host và response từ host -> ra ngoài firewall. Gồm 5 phase:
+  - Request Header(1) -> Request Body (2) -> Response Headers (3) -> Response Body (4) -> logging (5). Cơ chế hoạt động là áp rules lên trước khi mod thực hiện phân tích thành phần tương ứng với tên phase. Nghĩa là rules áp lên phase 1 sẽ thực thi trước cả khi parse header request và rules ở phase 5 thực thi sau khi parse xong response body và trước khi log
+    - Mỗi rules luôn có dạng
+        #+begin_example
+    SecRule Variables operator/filter actions
+        #+end_example
+    - Theo [[https://coreruleset.org/docs/][https://coreruleset.org/docs/]], có tổng cổng 105 variable, 36 operator,35 transsformation,47 actions trong ModSec. nghĩa là có ít nhất
+        #+begin_src perl
+    105*36*35*47
 
-      
+        #+end_src
+
+        #+RESULTS:
+        : 6218100 minimum rules combination, chưa tính việc một rule có thể chain với rule khác, hay khái niệm variable trong modsec thực chất mặc định là một collection, nghĩa là có thể chia nhỏ ra nhiều variable nhỏ hơn
+
+    - Tuy nhiên thực tế, chỉ có một số rule thông dụng.
+    - Với sự phong phú về rules như thế , modsec là firewall mạnh mẽ nhất của Apache ở phương diện web application.
+
+    - Bài viết này, vì giới hạn thời gian (1 tháng) và nhóm còn bận nhiều việc khác. Nên không xoáy sâu vào những phần phức tạp hơn như logging, hay core-rules sec, hay Lua script...
+
+    - Data persisten: ngoài cơ chế chia theo transition/phase, modsec còn quản lý dữ liệu theo data persisten mechanism, nghĩa là mỗi collection sẽ được lưu lại với một khoảng timeout nhất định, theo mặc định là 3600s. Nói cho dễ hiệu, ta có collection IP, một collection mặc định từ Apache 2.5x trở lên, nó lưu lại mọi địa chỉ IP qua lại giữa modsec firewall, nếu chỉ hoạt động theo transition/phase, thì mỗi ip sẽ bị xoá đi ngay sau khi nó đi vào/ra khỏi firewall, tuy nhiên cơ chế dp sẽ lưu lại mỗi địa chỉ ip trong 3600s. Cơ chế này được dùng rất nhiều, ví dụ ta dùng collection IP để chống lại DOS, bằng cách tạo một variable IP.counter và đếm số lần mỗi IP xuất hiện nhằm allow,block. 
+
+    - Một số ví dụ:
+#+begin_src apache
+       # block mọi request từ 10.0.0.1
+       SecRule REMOTE_ADDR "streq 10.0.0.1" "id:1000, phase:1, block,log"
+     # Dùng perl regrex, filter 192.168.1.{1-5}, không log
+       SecRule REMOTE_ADDR "@rx ^192\.168\.1\.(1|5|10)$" \
+       phase:1,nolog,allow
+   # SEcAction là secrule đặc biệt không cần phải có variable và filter, nghĩa là sẽ thực thi không điều kiện các action sau.
+       #Ở đây là khởi tạo, tăng biến IP.couter lên 1 đơn vị. UPDATE_RATE là built-in variable cho collection IP, số request mỗi giây. Nghĩa là ta block mọi ip mà gửi hơn 5 requesst mỗi giây
+       SecAction phase:1,nolog,pass,setvar:IP.counter=+1
+       SecRule IP:UPDATE_RATE "@gt 5" \
+   "phase:1,block,msg:IP này gửi hơn 5 request mỗi giây: %{IP.UPDATE_RATE},có thể dos"
+#+end_src
+#+begin_example
+- Modsec là firewall ở application level, không dùng để chặn DOS tư ICMP, TCP, UDP... 
+#+end_example
 ** Kịch bản thực hành:
 
 
@@ -332,6 +413,8 @@ iptables -S INPUT
 #bị block cho tới khi trở về bình thường.
                      iptables --append RATE-LIMIT --protocal icmp --match limit --limit 50/sec --limit-burst 5 --jump ACCEPT
      #+end_src
+
+#+end_src
 *** TCP SYN flood
 
 
@@ -522,12 +605,50 @@ iptables -S INPUT
  #+DOWNLOADED: screenshot @ 2020-12-08 11:45:44
  [[file:_assets/2020-12-08_11-45-44_screenshot.png]]
 
+**** Dùng mod-security để chặn:
 
- #+begin_comment
- Advanture attack -> write script that auto attack with http request. USe burpsuite or wireshark to capture
- #+end_comment
+#+begin_src apache
+  # Đoạn rules này trích từ mod_sec core_rule_sec
+# Ở phiên bản gần đây người dùng nên thêm config SecConnEngine On để kích hoạt RESPONSE status, nếu không sẽ ModSec sẽ không trả về kết quả như ý
+    SecRule RESPONSE_STATUS "@streq 408" "phase:5,id:'981051',t:none,nolog,pass,setvv
+    ar:ip.slow_dos_counter=+1,expirevar:ip.slow_dos_counter=120"
+    SecRule IP:SLOW_DOS_COUNTER "@gt 3" "phase:1,id:'981052',t:none,log,drop,msg:'Cll
+    ient Connection Dropped due to high %{ip.slow_dos_counter} request of slow DoS alerts'"
+#+end_src
+- Diễn giải: Không như kiểu Dos dựa trên volumn vốn gửi thật nhiều kết nối mới và ta có thể filter dựa trên số kết nối mỗi giây, slow&low attack duy trì một lượng kết nối tương nối vừa phải và chỉ reset các kết nối này sau 1 khoảng thời gian, do đó ta cần cách tiếp cận khác
+  - Slowloris.pl và các tool tương tự hoạt động theo nguyên tắc giả vờ muốn mở kết nối với server nạn nhân, nhưng không thật sự gửi, và chúng duy trì kết nối ấy với các packet syn liên tục cho tới khi máy chủ chủ động drop connection và trả về HTTP_response với status 408
+  - Nên ta chỉ cần filter theo RESPONSE_STATUS, tạo một ip.dos_counter với timeout 120s. Nếu trong 60s mà ip này gửi trên 5 kết nối sẽ bị drop.
+  #+DOWNLOADED: screenshot @ 2020-12-23 15:36:37
+  [[file:_assets/2020-12-23_15-36-37_screenshot.png]]
 
- #+begin_comment
+  - Demo:
+  - Dùng script sau để dễ theo dõi số concurent connection in port 80
+     #+begin_src perl
+       #!/usr/bin/perl
+       use warnings;
+       use strict;
+       $> == 0 ? () : due "run as root please";
+       `cat > bin.sh << EOF
+                                 #!/bin/sh
+                              echo "So concu connection tren port 80 la \n"
+                            ss -tpna |grep : 80 | wc -l
+                        EOF
+                     `;
+       system ("chmod +x bin.sh");
+       system ("watch -n1 ./bin.sh");
+     #+end_src
+     #+DOWNLOADED: screenshot @ 2020-12-24 10:11:06
+     [[file:_assets/2020-12-24_10-11-06_screenshot.png]]
+- Khi dùng slowloris hoặc tương tự
+  #+DOWNLOADED: screenshot @ 2020-12-24 10:11:38
+đ  [[file:_assets/2020-12-24_10-11-38_screenshot.png]]
+- Ngay sau khi ta thêm Mod_sec rule như trên vào,sau 60s để chờ rules phát huy kết quả
+  #+DOWNLOADED: screenshot @ 2020-12-24 10:14:43
+  [[file:_assets/2020-12-24_10-14-43_screenshot.png]]
+
+  #+begin_comment
+
+
 **** Non-dos                                                       :noexport:
  - NTP amplication dos attack
  - UDP-DNS flood attack
@@ -563,7 +684,24 @@ iptables -S INPUT
  #+DOWNLOADED: screenshot @ 2020-12-17 21:22:23
  [[file:_assets/2020-12-17_21-22-23_screenshot.png]]
  - Ta thấy số packet nhận về thấp hơn rất nhiều. Điều đó hoàn toàn hợp lý vì port mirroring ta chỉ trích 1 phần nhỏ gửi tới snort. Nhờ đó giảm tải cho hệ thống IDS rất nhiều, nhất là khi phải theo dõi nhiều mạng lưới khác nhau.
+ - Dùng mod_security:
+ #+begin_src apache
+SecAction id:1009,phase:1,initcol:ip=%{REMOTE_ADDR},nolog
 
+SecAction id:1010,phase:1,nolog,pass,setvar:IP.counter=+1
+SecRule  IP:UPDATE_RATE "@gt 1" \
+"id:1011,phase:1,block,msg:'Request rate too high for IP address: %{REMOTE_ADDR} with rate : %{ip.update_rate}'"
+ #+end_src
+
+#+DOWNLOADED: screenshot @ 2020-12-24 10:45:58
+- Dùng hulk trước khi dùng mod_Sec
+[[file:_assets/2020-12-24_10-45-58_screenshot.png]]
+- Sau khi dùng mod_sec với rules như trên
+  
+#+DOWNLOADED: screenshot @ 2020-12-24 10:40:49
+
+#+DOWNLOADED: screenshot @ 2020-12-24 11:41:24
+[[file:_assets/2020-12-24_11-41-24_screenshot.png]]
 
 **** Ping of Death                                                 :noexport:
   - Dùng ping mặt định, length của mỗi ICMP packet là 42
@@ -718,3 +856,167 @@ iptables -S INPUT
    #+DOWNLOADED: screenshot @ 2020-12-18 22:34:43
  [[file:_assets/2020-12-18_22-34-43_screenshot.png]]
      
+*** Command Injection:
+#+begin_comment
+Command injection is an attack in which the goal is execution of arbitrary commands on the host operating system via a vulnerable application. Command injection attacks are possible when an application passes unsafe user supplied data (forms, cookies, HTTP headers etc.) to a system shell. In this attack, the attacker-supplied operating system commands are usually executed with the privileges of the vulnerable application. Command injection attacks are possible largely due to insufficient input validation.
+
+This attack differs from Code Injection, in that code injection allows the attacker to add their own code that is then executed by the application. In Command Injection, the attacker extends the default functionality of the application, which execute system commands, without the necessity of injecting code.
+#+end_comment
+- Command injection có mục tiêu là kích hoạt một command (thường là shell) lên hệ điều hành của mục tiêu. Nó dựa trên những lỗ hổng do việc thiết kế web application một cách không cẩn thẩn. Cho phép người dùng nhập dữ liệu vào và kích hoạt system shell. Nhưng do không giới hạn hết các trường hợp có thể xảy ra nên attacker có thể nhúng vào những dòng shell gây nguy hại cho hệ thống.
+  #+begin_src php
+    if( isset( $_POST[ 'Submit' ]  ) ) {
+        // Get input
+        $target = $_REQUEST[ 'ip' ];
+    // Dòng shell_exec được kích hoạt một cách quá sơ sài, hoàn toàn không filter. Dùng một filter đơn giản như sau
+    // $substitutions = array(
+    // 	'&'  => '',
+    // 	';'  => '',
+    // 	'| ' => '',
+    // 	'-'  => '',
+    // 	'$'  => '',
+    // 	'('  => '',
+    // 	')'  => '',
+    // 	'`'  => '',
+    // 	'||' => '',
+    // );
+// Là sẽ chặn được rất nhiều cố gắng theo hướng này
+    //     // Determine OS and execute the ping command.
+        if( stristr( php_uname( 's' ), 'Windows NT' ) ) {
+            // Windows
+            $cmd = shell_exec( 'ping  ' . $target );
+        }
+        else {
+            // *nix
+            $cmd = shell_exec( 'ping  -c 4 ' . $target );
+        }
+
+        // Feedback for the end user
+        $html .= "<pre>{$cmd}</pre>";
+    }
+
+  #+end_src
+#+caption: Input bình thường
+#+DOWNLOADED: screenshot @ 2020-12-22 03:37:28
+[[file:_assets/2020-12-22_03-37-28_screenshot.png]]
+#+DOWNLOADED: screenshot @ 2020-12-22 03:44:22
+#+caption: nhúng command vào
+[[file:_assets/2020-12-22_03-44-22_screenshot.png]]
+- Khi đã biết có thể nhúng shell command vào được, ta biết attacker có thể dùng tool để tự động quá trình exploit:
+#+begin_src shell
+commix -u "http://10.0.0.1/vulnerabilities/exec/" --data="ip=1.1.1.1&Submit=Submit" --cookie="PHPSESSID=g7hj2o78119r1pdjsu3vpbbet6; security=low" --all -v 4 --flush-session
+#+end_src
+
+#+DOWNLOADED: screenshot @ 2020-12-22 03:48:54
+[[file:_assets/2020-12-22_03-48-54_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-22 03:49:11
+[[file:_assets/2020-12-22_03-49-11_screenshot.png]]
+**** Cách phòng thủ:
+   |                      | POST DATA                     |
+   |----------------------+-------------------------------|
+   | request thông thường | 1.1.1.1 (%ddd.%ddd.%ddd.%ddd) |
+   | request from commit  | tất cả những thứ còn lại      |
+   - Tất cả mọi hướng phòng thủ đều chỉ hướng tới filter mọi output không có dạng %ddd.%ddd.%ddd.%ddd
+***** Với IDS/snort:
+   #+begin_src snort
+     alert tcp !$HOME_NET any -> $HOME_NET 80 (msg:"Seem like command injection attempt from those little kid";\
+         content:"/vulnerabilities/exec/";http_uri; \
+         content:"ip=";pcre:!"/ip=\d{1-3}\.\d{1-3}\.\d{1-3}\.\d{1-3}&Submit=Submit/i";http_client_body;\
+         sid:1000006;rev:1)
+   #+end_src
+   - Snort alert request từ commix
+   #+DOWNLOADED: screenshot @ 2020-12-22 08:49:58
+   [[file:_assets/2020-12-22_08-49-58_screenshot.png]]
+   - Nhập thông thường
+   #+DOWNLOADED: screenshot @ 2020-12-22 08:59:35
+   [[file:_assets/2020-12-22_08-59-35_screenshot.png]]
+
+   #+DOWNLOADED: screenshot @ 2020-12-22 08:59:58
+   [[file:_assets/2020-12-22_08-59-58_screenshot.png]]
+
+   # Rules
+***** Với mod_security:
+- Thay vì ~reinvent the wheel~ ta dùng mod-security core rule set
+  #+begin_src shell
+ln /usr/share/modsecurity-crs/modsecurity_crs_41_sql_injection_attack.conf /etc/modsecurity/
+  #+end_src
+- Phân tích sơ lược về các rules trong file này
+  #+begin_src perl
+  #Trích code không lấy comment
+perl -ne 'print if !/^#/' /usr/share/modsecurity-crs/modsecurity_crs_41_sql_injection_attack.conf
+  #+end_src
+  #+begin_src shell
+            # khoản 123 rules
+    # tựu trung tập trung filer cookie và các arg trong request để tìm các từ khoá đáng ngờ của sql language và deny cá request như thế
+        SecRule REQUEST_COOKIES|!REQUEST_COOKIES:/__utm/|REQUEST_COOKIES_NAMES|ARGS_NAMES|ARGS|XML:/* "(?i:(?:[\"'`´’‘]\s*?\*.+(?:x?or|div|like|between|and|id)\W*?[\"'`´’‘]\d)|(?:\^[\"'`´’‘])|(?:^[\w\s\"'`´’‘-]+(?<=and\s)(?<=or|xor|div|like|between|and\s)(?<=xor\s)(?<=nand\s)(?<=not\s)(?<=\|\|)(?<=\&\&)\w+\()|(?:[\"'`´’‘][\s\d]*?[^\w\s]+\W*?\d\W*?.*?[\"'`´’‘\d])|(?:[\"'`´’‘]\s*?[^\w\s?]+\s*?[^\w\s]+\s*?[\"'`´’‘])|(?:[\"'`´’‘]\s*?[^\w\s]+\s*?[\W\d].*?(?:#|--))|(?:[\"'`´’‘].*?\*\s*?\d)|(?:[\"'`´’‘]\s*?(x?or|div|like|between|and)\s[^\d]+[\w-]+.*?\d)|(?:[()\*<>%+-][\w-]+[^\w\s]+[\"'`´’‘][^,]))" "phase:2,capture,t:none,t:urlDecodeUni,deny,msg:'Detects classic SQL injection probings 2/2',id:'981243',tag:'OWASP_CRS/WEB_ATTACK/SQL_INJECTION',logdata:'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}',severity:'2',setvar:'tx.msg=%{rule.id}-%{rule.msg}',setvar:tx.sql_injection_score=+1,setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:'tx.%{tx.msg}-OWASP_CRS/WEB_ATTACK/SQLI-%{matched_var_name}=%{tx.0}'"
+# Ngoài ra tạo và thep dõi các biết tx.{***} để quyết định xem có nên block request hay không, tx (transaction collection )cũng như ip collection, là một built-in persisten collection lữu trữ dữ liệu về transaction
+SecRule TX:SQLI_SELECT_STATEMENT "@containsWord select" "phase:2,id:'981301',t:none,pass,nolog,setvar:tx.sqli_select_statement_count=+1,setvar:tx.sql_injection_score=+1"
+SecRule TX:SQLI_SELECT_STATEMENT "@containsWord show" "phase:2,id:'981302',t:none,pass,nolog,setvar:tx.sqli_select_statement_count=+1,setvar:tx.sql_injection_score=+1"
+SecRule TX:SQLI_SELECT_STATEMENT "@containsWord top" "phase:2,id:'981303',t:none,pass,nolog,setvar:tx.sqli_select_statement_count=+1,setvar:tx.sql_injection_score=+1"
+SecRule TX:SQLI_SELECT_STATEMENT "@containsWord distinct" "phase:2,id:'981304',t:none,pass,nolog,setvar:tx.sqli_select_statement_count=+1,setvar:tx.sql_injection_score=+1"
+SecRule TX:SQLI_SELECT_STATEMENT "@containsWord from" "phase:2,id:'981305',t:none,pass,nolog,setvar:tx.sqli_select_statement_count=+1,setvar:tx.sql_injection_score=+1"
+SecRule TX:SQLI_SELECT_STATEMENT "@containsWord dual" "phase:2,id:'981306',t:none,pass,nolog,setvar:tx.sqli_select_statement_count=+1,setvar:tx.sql_injection_score=+1"
+
+    
+  #+end_src
+  - Test với dòng sqlmap sau và ta thấy sqlmap bị deny connection
+    #+begin_src shell
+    sqlmap -a --cookie="PHPSESSID=q26rlipdsjcmhavd0d1d43nb24[82/97862]│modsecurity_crs_30_http_policy.conf =low" -u "http://victim/vulnerabilities/sqli/?id=1&Submit=Submit" -- flush-session
+    #+end_src
+    #+DOWNLOADED: screenshot @ 2020-12-24 13:20:58
+    [[file:_assets/2020-12-24_13-20-58_screenshot.png]]
+- Check log_audit của modsec:
+  #+DOWNLOADED: screenshot @ 2020-12-24 13:22:14
+  [[file:_assets/2020-12-24_13-22-14_screenshot.png]]
+
+  
+*** XSS :
+- Cross-site Scripting attack cố gắng nhúng code javascript vào trang web. Trong công nghệ web application nói chung, có 2 ngôn ngữ lập trình phổ biến nhất là PHP và JS. 
+- Trong khi PHP hoạt động trực tiếp trên Server. Nghĩa là khi brower gửi request thì server sẽ vận hành code PHP để output ra kết quả và gửi về cho browser. Thì Javascript hoạt động ngay trên Browser. Nghĩa là khi người server trả về response chứa file html đính kèm với JS, code JS sẽ được dịch trực tiếp trên browser của người dùng.
+- Vì bản thân server không nhận thức được sự tồn tại của JS nó gửi cho browser, do nó không trực tiếp kích hoạt code. Nên nếu bản thân người dev không cẩn thận, attacker sẽ nhúng JS vào chính server thông qua các input form.
+- Nói đơn giản, giả sử attacker biết server sẽ tự động trả về một kết quả ABC nào đó nếu người gửi một request XYZ. Nhưng nếu server không có cơ chế lọc javascript . Attacker cố tính nhập vào javascript, và server, vẫn theo nguyên tắc, trả về kết quả có đoạn javascript ấy. Server không hề hay biết nó bị inject do nó không kích hoạt đoạn js này, đoạn js này chỉ kích hoạt trên browser của người dùng. Trong thực tế, nếu phát hiện một website có thể bị XSS, attacker sẽ cố gắng đánh lừa nạn nhân gửi request chứa XSS tới server ( ví dụ qua email có chưa link chứa các request này). Và khi browser trả về kết quả vốn chưa JS độc (ví dụ như kích hoạt một form cập nhật mật khẩu chẳng hạn). Người dùng vì yên tâm đó là từ server sẽ nhập thông tin nhạy cảm vào. 
+- ví dụ: với dòng code ~<script>alert("kitty")</script>~ vào form bên dưới đã đủ để kích hoạt js. Đoạn payload này dùng được cho cả 2 challenge persistent(Store) XSS và reflect XSS.
+  - Một web app có thể bị suffer từ XSS thường có source code như vầy
+  #+DOWNLOADED: screenshot @ 2020-12-23 02:16:10
+- Persistent XSS là khi mà JS lưu lại ngay trên server. ví dụ như trong trường hợp này
+  #+begin_src php
+    // Get input
+    $name = htmlspecialchars( $_GET[ 'name' ] );
+    // Feedback for end user
+    echo "<pre>Hello ${name}</pre>"; 
+  #+end_src
+  - Hay như vầy
+  #+begin_src php
+    // Update database
+        $query  = "INSERT INTO guestbook ( comment, name ) VALUES ( '$message', '$name' );";
+        $result = mysqli_query($GLOBALS["___mysqli_ston"],  $query ) or die( '<pre>' . ((is_object($GLOBALS["___mysqli_ston"])) ? mysqli_error($GLOBALS["___mysqli_ston"]) : (($___mysqli_res = mysqli_connect_error()) ? $___mysqli_res : false)) . '</pre>' );
+
+        //mysql_close();
+  #+end_src
+  - Như trên thì payload được nhập vào bị lưu lại trên database và payload js sẽ tiếp tục được thực thi nếu người dùng trở lại kể cả với kết nối thông thường
+#+DOWNLOADED: screenshot @ 2020-12-23 03:45:00
+[[file:_assets/2020-12-23_03-45-00_screenshot.png]]
+
+- Dĩ nhiên thực tế không dễ như thế, các dev thường sẽ bảo vệ web app của họ bằng các phương pháp khác nhau, mà thường nhanh nhất là áp dụng sanitizationn input. Nghĩa là filter đi những phần input có thể gây hại trước khi nó vào server (Như cụm từ ~<script>~ chẳng hạn). Do đó attack thường sự dụng những tool nhằm tự động hoá quá trình exploit.
+#+begin_src shell
+root@kali ~# xsser -u "http://10.0.0.1/vulnerabilities/xss_s/" --cookie="PHPSESSID=ciaqmol5nsqb2a9mght79aii66; security=low"  -p 'txtName=nhannht&mtxMessage=XSS&btnSign=Sign+Guestbook'  --auto-set=10 --save
+
+#+end_src
+
+#+DOWNLOADED: screenshot @ 2020-12-23 09:38:41
+[[file:_assets/2020-12-23_09-38-41_screenshot.png]]
+- XSSer hoặc các công cụ tương tự sẽ trả về kết quả nếu nó phát hiện, vì hoạt động theo cơ chế fuzzing,nên kết quả nhìn sẽ hơi rối mắt, chúng ta cần phải biết cách phân tích. ví dụ
+  #+begin_src shell
+  txtName=nhannht&mtxMessage=%22%3E%3CSCRIPT%3Ealert%28%2789aa030de30557f1baedee0d5f211875%27%29%3C%2FSCRIPT%3E&btnSign=Sign+Guestbook
+  #+end_src
+ta decode ra thành
+#+begin_src shell
+ txtName=nhannht&mtxMessage="><SCRIPT>alert('89aa030de30557f1baedee0d5f211875')</SCRIPT>&btnSign=Sign Guestbook
+#+end_src
+Ta chỉ lấy phần quan trọng nhất là ~<script>alert()</script>~ và dùng nó để test lại xem XSS có hoạt động với payload này không
+- Dùng wireshare, ta thấy cách hoạt động của XSSer dựa theo cơ chế fuzzing, nghĩa là random input dựa trên một số mẫu có sẵn, một kiểu nâng cao hơn của dictionary attack, dù vậy việc dựa trên những mẫu có sẵn đó là luôn phải đi kèm với các html tag như <script><\script> hay <title><\title> hay một số cụm từ alert(),onMouseclick khiến cho việc phát hiện và ngăn chặn XSS khá dễ dàng
+- Cách phòng thủ
+- Với modsecurity:
+  - Tương tự ta dùng mod-csr:
+
+
