@@ -1018,5 +1018,21 @@ Ta chỉ lấy phần quan trọng nhất là ~<script>alert()</script>~ và dù
 - Cách phòng thủ
 - Với modsecurity:
   - Tương tự ta dùng mod-csr:
+#+begin_src shell
+ln /usr/share/modsecurity-crs/base_rules/modsecurity_crs_41_xss_attacks.conf /etc/modsecurity/
+#+end_src
+#+begin_src shell
+xsser -u "http://victim" -g "/vulnerabilities/xss_r/?name=XSS" --auto --cookie="PHPSESSID=q26rlipdsjcmhavd0d1d43nb24; security=low"
+#+end_src
+
+- Và ta thấy Xsser cũng bị deny request 
 
 
+#+DOWNLOADED: screenshot @ 2020-12-24 13:43:21
+[[file:_assets/2020-12-24_13-43-21_screenshot.png]]
+
+
+- Check log của modec:
+
+#+DOWNLOADED: screenshot @ 2020-12-24 13:43:42
+[[file:_assets/2020-12-24_13-43-42_screenshot.png]]

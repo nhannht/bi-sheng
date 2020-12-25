@@ -1,10 +1,182 @@
 Asterisk
 * Tổng quan về voip
 * Tổng quan về asterisk
-* TODO  3 proplem với asterisk
+* TODO  3 proplem với asterisk                                     :noexport:
+  - [ ] lý thuyết về pbx/voip
+  - [ ] lý thuyết về asterisk/freepbx 
   - [ ] Solution 1: Kết nối asterisk 3 thiết bị 2 máy và 1 điện thoại
   - [ ] Solution 2: conference with asterisk 
   - [ ] 3 : video call with asterisk 3
   - [ ] 4: large office with different sub kết hợp với cisco technology
   - [ ] 5: Dùng freepbx thiết kết nố asterisk over internet
   - [ ] 6: 1 bài exploit voip
+
+
+
+** Lý thuyết về pbx/voip
+   - pbx (private branch exchange) là công nghệ cho phép lắp đặt/kết nối mạng điện thoại nội bộ ở phạm vi một tổ chức hay văn phòng. Nhằm không phụ thuộc và các dịch vụ điện thọai bên ngoài. Mục đích chính, tiết kiệm chi phí, trao quyền điều khiển toàn bộ hệ thống cho người lắm đặt
+   - Voip (voice-over-ip) là công nghệ truyền tín hiệu điện thoại thông qua Internet protocol. Sự phát triển vượt bật của internet về quy mộ và sự suy giảm về chi phí khiến Voip trở nên phổ biến khi kết hợp với pbx
+** lý thuyết về asterisk/freepbx 
+   - Asterisk khởi đầu như một ứng dụng hỗ trợ Pbx/voip cho văn phòng và công ty nhỏ. Nhưng theo thời gian, nó đã phát triển và trở thành một nề tảng toàn diện (1 framework) hỗ trợ cho các hệ thống khác nhau như Pbx, Voip gateway, call center system..... Nhà phát triển Asterisk này gọi nó là Communication server. Như một cách để so sánh sự tương đồng giữa Asterisk trong communication với Apache trong web application
+*** Asterisk (ở mức cơ bản) hoạt động dựa trên 3 concept chính
+**** Channel: mỗi channel là một object trong hệ thống asterisk, nó có thể là một tài khoản SIP, a phone.... Mỗi channel thuộc về Channel driver như một cách để phân loại các channel, ở bài này ta chủ yếu sử dụng SIP và PJSIP channel
+**** Bridge
+**** State
+** Demo 0: Build asterisk trên centos:
+   - Vì asterisk không hỗ trợ centos trên yum nên phải compile from source code
+#+begin_src perl 
+#!/usr/bin/env perl
+use strict;
+use warnings;
+system 'cd / && yum install epel-release -y  yum update && 
+  
+yum install libuuid-devel git jansson-devel libxml2-devel libsq3-devel sqlite -y && 
+
+yum groupinstall "Development Tools" -y &&
+git clone  https://github.com/asterisk/asterisk.git &&
+yum install -y "https://rpmfind.net/linux/centos/8.3.2011/PowerTools/x86_64/os/Packages/libedit-devel-3.1-23.20170329cvs.el8.x86_64.rpm" ';
+
+system 'cd /asterisk && ./configure && make && make install';
+system 'cd / && rm -rf asterisk';
+#+end_src
+
+#+RESULTS:
+: 0
+
+#+begin_src perl :results output :export none
+     use 5.010;
+     use strict;
+     use warnings;
+
+     use Cwd qw(getcwd);
+
+     say getcwd();
+     system 'pwd';
+
+
+     chdir "/etc/";
+     say getcwd();
+     system 'pwd';
+    system('cd ~ && pwd'); 
+  my $out=`cd ~/.emacs.d/ && \
+     pwd` ; print $out;
+#+end_src
+
+#+RESULTS:
+: /home/larva/repo/nhannht/public/bi-sheng
+: /home/larva/repo/nhannht/public/bi-sheng
+: /etc
+: /etc
+: /home/larva
+: /home/larva/.emacs.d
+
+#+begin_src dockerfile :exports none
+  FROM centos:latest as compile
+  WORKDIR /
+  RUN  yum install epel-release  -y
+  RUN yum install libuuid-devel fish vim git jansson-devel libxml2-devel libsq3-devel sqlite -y 
+  RUN  sudo yum groupinstall 'Development Tools' -y
+  RUN git clone  https://github.com/asterisk/asterisk.git
+  RUN yum install "https://rpmfind.net/linux/centos/8.3.2011/PowerTools/x86_64/os/Packages/libedit-devel-3.1-23.20170329cvs.el8.x86_64.rpm"
+  RUN ./configure && make && make install
+  WORKDIR /asterisk/configs/
+  RUN cp basic-pbx/* samples/* /etc/asterisk/
+  WORKDIR /
+  RUN rm -rf /asterisk
+  ENTRYPOINT /usr/bin/fish
+
+#+end_src
+** [#B] Demo1: Kết nối asterisk 3 thiết bị 2 máy và 1 điện thoại
+*** Với công nghệ SIP (legacy):
+   - Load module SIP và unload module JPSIP, vì 2 công nghệ này conflict với nhau vì cùng dùng 1 port 5060
+        #+begin_src shell
+#/etc/asterisk/module.conf
+                  noload => chan_ pjsip.so                                               
+          noload => res_pjsip.so                                            
+          load => chan_sip.so 
+        #+end_src
+- Add channel, mà ở đây là sip account trong SIP driver
+#+begin_src shell
+#/etc/asterisk/sip.conf
+    [nhannht]                                                                                                                    
+    type=friend                                                                                                              
+    username=nhannht                                                                                                             
+secret=PASSWORD                                                             
+host=dynamic                                           
+context=house                          
+
+[kyphuong]                                   
+type=friend                                                                    
+username=kyphuong                           
+secret=PASSWORD                           
+host=dynamic                           
+context=house
+
+              
+#+end_src
+Kết nối 2 thiết bị vào 2 sip account, dùng 2 linphone trên 2 máy khác nhau
+
+#+DOWNLOADED: screenshot @ 2020-12-25 21:10:44
+[[file:_assets/2020-12-25_21-10-43_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-25 21:11:43
+[[file:_assets/2020-12-25_21-11-43_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-25 21:11:55
+[[file:_assets/2020-12-25_21-11-55_screenshot.png]]
+- Sau khi kết nối thành công, ta cài extension, extension là tập hợp các rules quy định cách mỗi channel hoạt động, nhờ vào sự đa dạng của các rule trong mỗi extension mà asterisk rất powerful.
+  #+begin_src shell
+    # /etc/asterisk/extensions.conf
+[house]                                                        
+exten => 100,1,Dial(SIP/nhannht)                               
+exten => 200,1,Dial(SIP/kyphuong)
+  #+end_src
+
+  - Restart asterisk và thử gọi:
+    #+DOWNLOADED: screenshot @ 2020-12-25 21:16:50
+    [[file:_assets/2020-12-25_21-16-50_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-25 21:17:07
+[[file:_assets/2020-12-25_21-17-07_screenshot.png]]
+- Thành công
+
+*** Với công nghệ JPSIP :
+    #+begin_src shell
+[udp]
+type=transport
+protocol=udp
+bind=0.0.0.0
+
+[internal](!)
+type=endpoint
+context=from-internal
+disallow=all
+allow=ulaw
+
+[auth_userpass](!)
+type=auth
+auth_type=userpass
+
+[aor_dynamic](!)
+type=aor
+max_contacts=1
+
+
+
+[nhannht](endpoint_internal)
+auth=nhannht
+aors=nhannht
+[nhanht](auth_userpass)
+password=PASSWORD    
+username=nhannht
+[nhannht](aor_dynamic) 
+
+[kyphuong](endpoint_internal)
+auth=kyphuong
+aors=kyphuong
+[kyphuong](auth_userpass)
+password=PASSWORD 
+username=kyphuong
+[kyphuong](aor_dynamic) 
+
+    #+end_src
