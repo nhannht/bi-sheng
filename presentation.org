@@ -1,0 +1,9 @@
+#+TITLE: Chuẩn bị cho bài thuyết trình
+
+* Vmware
+
+* Gns 
+
+* ssh
+
+* freepbx iso

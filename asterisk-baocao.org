@@ -1,7 +1,79 @@
-Asterisk
+#+TITLE: Asterisk báo cáo
 * Tổng quan về voip
-* Tổng quan về asterisk
-* TODO  3 proplem với asterisk                                     :noexport:
+     - pbx (private branch exchange) là công nghệ cho phép lắp đặt/kết nối mạng điện thoại nội bộ ở phạm vi một tổ chức hay văn phòng. Nhằm không phụ thuộc và các dịch vụ điện thọai bên ngoài. Mục đích chính, tiết kiệm chi phí, trao quyền điều khiển toàn bộ hệ thống cho người lắm đặt
+   - Voip (voice-over-ip) là công nghệ truyền tín hiệu điện thoại thông qua Internet protocol. Sự phát triển vượt bật của internet về quy mộ và sự suy giảm về chi phí khiến Voip trở nên phổ biến khi kết hợp với pbx
+
+* Tổng quan về asterisk:
+  - Asterisk khởi đầu như một ứng dụng hỗ trợ Pbx/voip cho văn phòng và công ty nhỏ. Nhưng theo thời gian, nó đã phát triển và trở thành một nề tảng toàn diện (1 framework) hỗ trợ cho các hệ thống khác nhau như Pbx, Voip gateway, call center system..... Nhà phát triển Asterisk này gọi nó là Communication server. Như một cách để so sánh sự tương đồng giữa Asterisk trong communication với Apache trong web application
+** Asterisk thiết kế dựa trên module.
+     Mỗi module là một thành phần có thể load được. Cung cấp những chức năng khác nhau như channel driver( chan_pjsip.so), hay hỗ trợ kết nối với các công nghệ bên ngoài như func_obdc.so. Các module này được load dựa trên config trong file /etc/asterisk/modules.conf
+    #+begin_src conf
+    ; are not loaded at startup
+; tail -n 10 của modules.conf
+noload => app_voicemail_odbc.so
+noload => app_voicemail_imap.so
+
+
+;My config
+noload => chan_pjsip.so
+noload => res_pjsip.so
+
+
+    #+end_src
+** File structure của asterisk
+   - Config file nằm ở /etc/asterisk/asterisk.conf
+     #+begin_src conf 
+ls /etc/asterisk |head -n10
+     #+end_src
+
+#+begin_example
+acl.conf
+adsi.conf
+agents.conf
+alarmreceiver.conf
+alsa.conf
+amd.conf
+app_mysql.conf
+app_skel.conf
+ari.conf
+ast_debug_tools.conf
+#+end_example
+
+
+   - Modules file chưá trong //usr/lib/asterisk/modules/
+#+begin_src shell 
+ls  /usr/lib/asterisk/modules |head -10
+#+end_src
+#+begin_example
+app_adsiprog.so
+app_agent_pool.so
+app_alarmreceiver.so
+app_amd.so
+app_attended_transfer.so
+app_audiosocket.so
+app_authenticate.so
+app_blind_transfer.so
+app_bridgeaddchan.so
+app_bridgewait.so
+
+#+end_example
+
+- Log chứa trong //var/log/asterisk//
+
+  #+begin_src shell
+ls  /var/log/asterisk
+  #+end_src
+#+begin_example
+cdr-csv
+cdr-custom
+cel-custom
+messages
+queue_log
+#+end_example
+
+
+  
+  #+begin_comment
   - [ ] lý thuyết về pbx/voip
   - [ ] lý thuyết về asterisk/freepbx 
   - [ ] Solution 1: Kết nối asterisk 3 thiết bị 2 máy và 1 điện thoại
@@ -10,40 +82,39 @@ Asterisk
   - [ ] 4: large office with different sub kết hợp với cisco technology
   - [ ] 5: Dùng freepbx thiết kết nố asterisk over internet
   - [ ] 6: 1 bài exploit voip
+  #+end_comment
 
 
 
-** Lý thuyết về pbx/voip
-   - pbx (private branch exchange) là công nghệ cho phép lắp đặt/kết nối mạng điện thoại nội bộ ở phạm vi một tổ chức hay văn phòng. Nhằm không phụ thuộc và các dịch vụ điện thọai bên ngoài. Mục đích chính, tiết kiệm chi phí, trao quyền điều khiển toàn bộ hệ thống cho người lắm đặt
-   - Voip (voice-over-ip) là công nghệ truyền tín hiệu điện thoại thông qua Internet protocol. Sự phát triển vượt bật của internet về quy mộ và sự suy giảm về chi phí khiến Voip trở nên phổ biến khi kết hợp với pbx
-** lý thuyết về asterisk/freepbx 
-   - Asterisk khởi đầu như một ứng dụng hỗ trợ Pbx/voip cho văn phòng và công ty nhỏ. Nhưng theo thời gian, nó đã phát triển và trở thành một nề tảng toàn diện (1 framework) hỗ trợ cho các hệ thống khác nhau như Pbx, Voip gateway, call center system..... Nhà phát triển Asterisk này gọi nó là Communication server. Như một cách để so sánh sự tương đồng giữa Asterisk trong communication với Apache trong web application
-*** Asterisk (ở mức cơ bản) hoạt động dựa trên 3 concept chính
+*** 3 concept chính                                                :noexport:
 **** Channel: mỗi channel là một object trong hệ thống asterisk, nó có thể là một tài khoản SIP, a phone.... Mỗi channel thuộc về Channel driver như một cách để phân loại các channel, ở bài này ta chủ yếu sử dụng SIP và PJSIP channel
 **** Bridge
 **** State
-** Demo 0: Build asterisk trên centos:
-   - Vì asterisk không hỗ trợ centos trên yum nên phải compile from source code
+*  Build asterisk trên centos/ Cài đặt freepbx
+** Build Asterisk: 
+   - Vì asterisk không hỗ trợ centos trên yum nên phải compile from source code. (asterisk được hộ trợ sẵn trên các package manager của ubuntu hay arch linux)
 #+begin_src perl 
-#!/usr/bin/env perl
-use strict;
-use warnings;
-system 'cd / && yum install epel-release -y  yum update && 
+# Đoạn script để install asterisk
+  use strict;
+  use warnings;
+  system 'cd / && yum install epel-release -y  yum update && 
   
-yum install libuuid-devel git jansson-devel libxml2-devel libsq3-devel sqlite -y && 
+  yum install libuuid-devel git jansson-devel libxml2-devel libsq3-devel sqlite -y && 
 
-yum groupinstall "Development Tools" -y &&
-git clone  https://github.com/asterisk/asterisk.git &&
-yum install -y "https://rpmfind.net/linux/centos/8.3.2011/PowerTools/x86_64/os/Packages/libedit-devel-3.1-23.20170329cvs.el8.x86_64.rpm" ';
+  yum groupinstall "Development Tools" -y &&
+  git clone  https://github.com/asterisk/asterisk.git &&
+  yum install -y "https://rpmfind.net/linux/centos/8.3.2011/PowerTools/x86_64/os/Packages/libedit-devel-3.1-23.20170329cvs.el8.x86_64.rpm" ';
 
-system 'cd /asterisk && ./configure && make && make install';
-system 'cd / && rm -rf asterisk';
+  system 'cd /asterisk && ./configure && make && make install';
+  system 'cd / && rm -rf asterisk';
 #+end_src
+- Chụp lại kết quả :
+  
+ #+DOWNLOADED: screenshot @ 2020-12-28 03:20:52
+ [[file:_assets/2020-12-28_03-20-52_screenshot.png]]
+ 
 
-#+RESULTS:
-: 0
-
-#+begin_src perl :results output :export none
+#+begin_src perl :results output :exports none
      use 5.010;
      use strict;
      use warnings;
@@ -86,21 +157,53 @@ system 'cd / && rm -rf asterisk';
   ENTRYPOINT /usr/bin/fish
 
 #+end_src
-** [#B] Demo1: Kết nối asterisk 3 thiết bị 2 máy và 1 điện thoại
-*** Với công nghệ SIP (legacy):
-   - Load module SIP và unload module JPSIP, vì 2 công nghệ này conflict với nhau vì cùng dùng 1 port 5060
-        #+begin_src shell
-#/etc/asterisk/module.conf
-                  noload => chan_ pjsip.so                                               
-          noload => res_pjsip.so                                            
-          load => chan_sip.so 
-        #+end_src
-- Add channel, mà ở đây là sip account trong SIP driver
-#+begin_src shell
+
+** Install freepbx:
+- Freepbx là một trong những linux distribution cung cấp giải pháp toàn bộ (gồm giao diện web,firewall... cho dịch vụ pbx dưới nền tảng asterisk)
+- Cài đặt freepbx tương đối dễ, chỉ cần tải file iso tù trang chủ về và dùng cách cài đặt cơ bản của bất kỳ nền tảng ảo hoá nào như vmware... là được  
+#+DOWNLOADED: screenshot @ 2020-12-26 18:58:42
+[[file:_assets/2020-12-26_18-58-42_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-26 18:59:09
+[[file:_assets/2020-12-26_18-59-09_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-26 18:59:55
+[[file:_assets/2020-12-26_18-59-55_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-26 19:00:47
+[[file:_assets/2020-12-26_19-00-47_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-26 19:01:40
+[[file:_assets/2020-12-26_19-01-40_screenshot.png]]
+- root/password
+- admin/password
+
+#+DOWNLOADED: screenshot @ 2020-12-26 19:04:19
+[[file:_assets/2020-12-26_19-04-19_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-26 19:20:09
+[[file:_assets/2020-12-26_19-20-09_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-26 19:23:53
+[[file:_assets/2020-12-26_19-23-53_screenshot.png]]
+
+* Demo1: Kết nối asterisk ít nhất 2 thiết bị 
+  - Mục đích: hiểu cơ bản về cú pháp về config trong asterisk
+**  Trực tiếp trong config file của asterisk
+**** Với công nghệ SIP (legacy):
+    - Load module SIP và unload module JPSIP, vì 2 công nghệ này conflict với nhau vì cùng dùng 1 port 5060
+      #+begin_src shell
+        #  /etc/asterisk/module.conf
+        noload => chan_pjsip.so
+        noload res_pjsip.so
+        load => chan_sip.so 
+      #+end_src
+ - Add channel, mà ở đây là sip account trong SIP driver
+ #+begin_src conf
 #/etc/asterisk/sip.conf
-    [nhannht]                                                                                                                    
-    type=friend                                                                                                              
-    username=nhannht                                                                                                             
+[nhannht]                                                                                                                    
+type=friend                                                                                                              
+username=nhannht                                                                                                             
 secret=PASSWORD                                                             
 host=dynamic                                           
 context=house                          
@@ -112,35 +215,46 @@ secret=PASSWORD
 host=dynamic                           
 context=house
 
-              
-#+end_src
-Kết nối 2 thiết bị vào 2 sip account, dùng 2 linphone trên 2 máy khác nhau
 
-#+DOWNLOADED: screenshot @ 2020-12-25 21:10:44
-[[file:_assets/2020-12-25_21-10-43_screenshot.png]]
+ #+end_src
+** Về cú pháp của asterisk config:
+- Tất cả những file config của asterisk đều chia thành section
+      #+begin_src conf
+        [section_header]
+        config = value
+        object-list => object_Value
+        #+end_src
+  - Asterisk được ra khái niệm config ( gán bởi dấu =) và object-list(gán bở dấu =>). Ta hiểu đơn giản đây là 2 loại biến đơn và list. 
+- Tuỳ theo file config mà section và biến config có ý nghĩa khác nhau. Như trong file sip.conf. Tên section header là SIP account, còn các giá trị ở phái dưới như type, username,... là các khái niệm thuộc phạm trù SIP communication. Không đi sâu vào ở đây. Ở file extension.conf (phía dưới), mỗi section header lại là một context. Và các config ở dưới là các rules để thực thi trong các context đó.
+- Ta gọi đó là tính abstraction của asterisk. Mỗi lĩnh vực trong communication nói chung và voip/pbx nói riêng đều rất khác nhau. Nhưng dưới Asterissk, chúng được trừu tượng hoá và quản lý dưới cùng một cấu trúc syntax. Nó khiến cho việc config và bảo trì về lâu dài của hệ thống pbx được ổn định, cũng như đảm bảo sự phát triển lâu dài của asterisk và các ứng dụng chạy trên nó. Tuy nhiên vẫn phải đòi hỏi người sử dụng nó có kiến thức về từng lĩnh vực cụ thể để asterisk hoạt động
+- Ta tiếp tục quay lại demo
+**** Kết nối 2 thiết bị vào 2 sip account, dùng 2 linphone trên 2 máy khác nhau
 
-#+DOWNLOADED: screenshot @ 2020-12-25 21:11:43
-[[file:_assets/2020-12-25_21-11-43_screenshot.png]]
+ #+DOWNLOADED: screenshot @ 2020-12-25 21:10:44
+ [[file:_assets/2020-12-25_21-10-43_screenshot.png]]
 
-#+DOWNLOADED: screenshot @ 2020-12-25 21:11:55
-[[file:_assets/2020-12-25_21-11-55_screenshot.png]]
-- Sau khi kết nối thành công, ta cài extension, extension là tập hợp các rules quy định cách mỗi channel hoạt động, nhờ vào sự đa dạng của các rule trong mỗi extension mà asterisk rất powerful.
-  #+begin_src shell
-    # /etc/asterisk/extensions.conf
-[house]                                                        
-exten => 100,1,Dial(SIP/nhannht)                               
-exten => 200,1,Dial(SIP/kyphuong)
-  #+end_src
+ #+DOWNLOADED: screenshot @ 2020-12-25 21:11:43
+ [[file:_assets/2020-12-25_21-11-43_screenshot.png]]
 
-  - Restart asterisk và thử gọi:
-    #+DOWNLOADED: screenshot @ 2020-12-25 21:16:50
-    [[file:_assets/2020-12-25_21-16-50_screenshot.png]]
+        #+DOWNLOADED: screenshot @ 2020-12-25 21:11:55
+ [[file:_assets/2020-12-25_21-11-55_screenshot.png]]
+        - Sau khi kết nối thành công, ta cài extension, extension là tập hợp các rules quy định cách mỗi channel hoạt động, nhờ vào sự đa dạng của các rule trong mỗi extension mà asterisk rất powerful.
+ #+begin_src shell
+   # /etc/asterisk/extensions.conf
+   [house]                                                        
+   exten => 100,1,Dial(SIP/nhannht)                               
+   exten => 200,1,Dial(SIP/kyphuong)
+ #+end_src
 
-#+DOWNLOADED: screenshot @ 2020-12-25 21:17:07
-[[file:_assets/2020-12-25_21-17-07_screenshot.png]]
-- Thành công
+   - Restart asterisk và thử gọi:
+     #+DOWNLOADED: screenshot @ 2020-12-25 21:16:50
+ [[file:_assets/2020-12-25_21-16-50_screenshot.png]]
 
-*** Với công nghệ JPSIP :
+ #+DOWNLOADED: screenshot @ 2020-12-25 21:17:07
+ [[file:_assets/2020-12-25_21-17-07_screenshot.png]]
+ - Thành công
+
+** Với công nghệ JPSIP :
     #+begin_src shell
 [udp]
 type=transport
@@ -161,8 +275,6 @@ auth_type=userpass
 type=aor
 max_contacts=1
 
-
-
 [nhannht](endpoint_internal)
 auth=nhannht
 aors=nhannht
@@ -180,3 +292,52 @@ username=kyphuong
 [kyphuong](aor_dynamic) 
 
     #+end_src
+- pjsip là giao thức mới hiện đại hơn so với sip, nhưn cũng phức tạp hơn để config.
+  #+DOWNLOADED: screenshot @ 2020-12-28 04:00:16
+  [[file:_assets/2020-12-28_04-00-16_screenshot.png]]
+- Restart asterisk và test lại , ta cũng sẽ đạt được kết quả tương tự như với sip
+    #+DOWNLOADED: screenshot @ 2020-12-26 03:36:46
+    [[file:_assets/2020-12-26_03-36-46_screenshot.png]]
+ - Gọi nhau giữa các máy cũng tương tự như với SIP, nên không lặp lại
+
+
+** Dùng Freepbx:
+   - Sau khi khởi động Freepbx, chọn tab ~Application -> Extensions -> Add new extensions -> Add new chan_sip extension~ , thêm vào thông số như trong hình.
+   #+DOWNLOADED: screenshot @ 2020-12-28 09:24:27
+   [[file:_assets/2020-12-28_09-24-26_screenshot.png]]
+- Như vậy là ta đã có 1 tài khoản với ~username~ là 200 và mật khẩu là ~password~.
+
+** Demo2: Set up conference/ring-group/ivr/music-on-hold/recording with freepbx
+
+*** Music-on-hold:
+- Setting -> Music on hold -> Add Category
+  #+DOWNLOADED: screenshot @ 2020-12-27 15:19:50
+  [[file:_assets/2020-12-27_15-19-50_screenshot.png]]
+
+#+DOWNLOADED: screenshot @ 2020-12-27 15:20:10
+[[file:_assets/2020-12-27_15-20-10_screenshot.png]]
+- Tuỳ chỉnh music on hold ở từng extension
+  - Application -> Extension -> Chọn Extension -> Tab Find Me/Follow Me -> Play Music On Hold
+    #+DOWNLOADED: screenshot @ 2020-12-27 15:22:11
+    [[file:_assets/2020-12-27_15-22-11_screenshot.png]]
+*** Conference:
+    - Application -> Conference -> Add
+      #+DOWNLOADED: screenshot @ 2020-12-27 15:25:46
+ [[file:_assets/2020-12-27_15-25-46_screenshot.png]]
+    - Testing
+      - Dùng bất kỳ tài khoản nào trên softphone gọi vào số 2000
+      - Sẽ được thông báo ~Please Enter the conference attend number~ -> Nhập và User number 9999, sẽ được thông báo chờ admin vào (nếu admin chưa vào), bạn cũng sẽ nghe Music on Hold trong lúc chờ admin
+      - Ở phiá admin cũng làm tương tự, chỉ khác là nhập attend num là 1111, và admin buộc phải có mặc, nếu admin đột ngột rời khỏi, cuộc họp sẽ bị pause
+*** Ring group
+ - Application -> Ring groups -> Add
+[[file:_assets/2020-12-27_16-06-04_screenshot.png]]
+
+- Test thử: Tạo thêm 1 tài khoản chan_sip với number 200, display name là instructor_Thao và gọi vào 5000
+  [[file:_assets/2020-12-27_16-05-41_screenshot.png]]
+- Cả 2 số 100 và 101 đều ring cùng lúc.
+** Demo3: Setup sip trunking để kết nối voip giữa 2 mạng khác nhau :noexport:
+
+** Demo4: Setup asterisk/freepbx với Cisco CME                     :noexport:
+
+
+
